@@ -1,4 +1,4 @@
-module pi-media-api
+module storage-api
 
 go 1.24.0
 
