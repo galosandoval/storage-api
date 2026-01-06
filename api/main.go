@@ -30,7 +30,7 @@ type User struct {
 func main() {
 	cfg := Config{
 		Addr: getenv("ADDR", ":8080"),
-		DSN:  getenv("DATABASE_URL", "postgres://mediaapp:change_me_now@localhost:5432/media_db?sslmode=disable"),
+		DSN:  getenv("DATABASE_URL", "postgres://storageapp:change_me_now@localhost:5432/storage_db?sslmode=disable"),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
