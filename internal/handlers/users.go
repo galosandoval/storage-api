@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"storage-api/internal/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserHandler struct {
