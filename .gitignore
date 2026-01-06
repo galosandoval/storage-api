@@ -1,6 +1,5 @@
 # Binaries
 /storage-api
-/migrate
 *.exe
 *.exe~
 *.dll
