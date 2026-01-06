@@ -168,12 +168,20 @@ GRANT ALL PRIVILEGES ON DATABASE storage_db TO storageapp;
 
 ### Running Migrations
 
-Apply database migrations using the provided script:
+Apply database migrations using the migrate tool:
 
 ```bash
-cd api
-chmod +x migrate.sh
-./migrate.sh
+# Build the migrate tool (first time only)
+go build -o migrate ./cmd/migrate
+
+# Run migrations
+./migrate -command up
+
+# Check migration status
+./migrate -command status
+
+# Rollback last migration
+./migrate -command down
 ```
 
 Or manually with goose:
@@ -419,18 +427,35 @@ sudo systemctl restart storage-api
 
 ```
 storage-api/
-├── api/
-│   ├── main.go              # Application entry point & HTTP handlers
-│   ├── go.mod               # Go module definition
-│   ├── go.sum               # Dependency checksums
-│   ├── storage-api          # Compiled binary (gitignored)
-│   ├── migrate.sh           # Database migration script
-│   └── migrations/          # SQL migration files
-│       ├── 20260104085419_init_households_users.sql
-│       └── 20260106033915_add_storage_items.sql
-├── infra/
-│   └── docker-compose.yml   # PostgreSQL container configuration
+├── cmd/                     # Application entry points
+│   ├── server/
+│   │   └── main.go          # API server entry point
+│   └── migrate/
+│       └── main.go          # Database migration tool
+├── internal/                # Private application code
+│   ├── config/
+│   │   └── config.go        # Configuration loading
+│   ├── models/
+│   │   └── user.go          # Data models
+│   ├── database/
+│   │   └── users.go         # Database queries
+│   ├── handlers/
+│   │   ├── health.go        # Health check handlers
+│   │   ├── users.go         # User handlers
+│   │   └── json.go          # JSON utilities
+│   └── server/
+│       └── server.go        # HTTP server setup & routing
+├── migrations/              # SQL migration files
+│   ├── 20260104085419_init_households_users.sql
+│   └── 20260106033915_add_storage_items.sql
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions CI pipeline
+├── docker-compose.yml       # PostgreSQL container configuration
+├── .env                     # Environment configuration (gitignored)
 ├── .gitignore               # Git ignore patterns
+├── go.mod                   # Go module definition
+├── go.sum                   # Dependency checksums
 └── README.md                # This file
 ```
 
