@@ -89,8 +89,8 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/galosandoval/storage-api.git storage-pi
-cd storage-pi
+git clone https://github.com/galosandoval/storage-api.git
+cd storage-api
 ```
 
 ### 2. Install Dependencies
@@ -212,9 +212,9 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/storage-pi/api
-EnvironmentFile=/home/pi/storage-pi/api/.env
-ExecStart=/home/pi/storage-pi/api/storage-api
+WorkingDirectory=/home/pi/storage-api
+EnvironmentFile=/home/pi/storage-api/.env
+ExecStart=/home/pi/storage-api/storage-api
 Restart=on-failure
 RestartSec=5s
 
@@ -418,7 +418,7 @@ sudo systemctl restart storage-api
 ## Project Structure
 
 ```
-storage-pi/
+storage-api/
 ├── api/
 │   ├── main.go              # Application entry point & HTTP handlers
 │   ├── go.mod               # Go module definition
