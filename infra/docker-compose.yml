@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: media-postgres
+    environment:
+      POSTGRES_USER: mediaapp
+      POSTGRES_PASSWORD: change_me_now
+      POSTGRES_DB: media_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediaapp -d media_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
