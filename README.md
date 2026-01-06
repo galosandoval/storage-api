@@ -364,6 +364,16 @@ go fmt ./...
 
 ## Deployment
 
+For automated deployment setup with GitHub Actions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed instructions.
+
+### Quick Deployment
+
+```bash
+# Manual deployment on Pi
+cd /home/pi/storage-api
+./deploy.sh
+```
+
 ### Raspberry Pi Considerations
 
 #### Hardware Recommendations
@@ -438,9 +448,12 @@ storage-api/
 │   ├── 20260104085419_init_households_users.sql
 │   └── 20260106033915_add_storage_items.sql
 ├── migrate.sh               # Database migration script
+├── deploy.sh                # Deployment script
+├── DEPLOYMENT.md            # Deployment setup guide
 ├── .github/
 │   └── workflows/
-│       └── ci.yml           # GitHub Actions CI pipeline
+│       ├── ci.yml           # GitHub Actions CI pipeline
+│       └── deploy.yml       # GitHub Actions deployment
 ├── docker-compose.yml       # PostgreSQL container configuration
 ├── .env                     # Environment configuration (gitignored)
 ├── .gitignore               # Git ignore patterns
