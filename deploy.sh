@@ -24,7 +24,7 @@ sleep 2
 # Check service status
 if sudo systemctl is-active --quiet storage-api; then
     echo "✅ Service is running successfully"
-    
+
     # Test health endpoint
     if curl -f http://localhost:8080/health/live >/dev/null 2>&1; then
         echo "✅ Health check passed"
@@ -38,4 +38,5 @@ else
 fi
 
 echo "🎉 Deployment complete!"
+
 

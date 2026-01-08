@@ -218,4 +218,3 @@ After deployment, verify:
 - Health check: `curl http://localhost:8080/health/live`
 - Database migrations: `cd /home/pi/storage-api && goose -dir migrations postgres "$DATABASE_URL" status`
 - API logs: `sudo journalctl -u storage-api -f`
-

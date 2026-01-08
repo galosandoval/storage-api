@@ -7,4 +7,3 @@ source "$(dirname "$0")/.env"
 set +a
 
 goose -dir "$(dirname "$0")/migrations" postgres "$DATABASE_URL" up
-
