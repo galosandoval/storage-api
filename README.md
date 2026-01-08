@@ -89,8 +89,8 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/galosandoval/storage-api.git storage-pi
-cd storage-pi
+git clone https://github.com/galosandoval/storage-api.git
+cd storage-api
 ```
 
 ### 2. Install Dependencies
@@ -171,12 +171,11 @@ GRANT ALL PRIVILEGES ON DATABASE storage_db TO storageapp;
 Apply database migrations using the provided script:
 
 ```bash
-cd api
 chmod +x migrate.sh
 ./migrate.sh
 ```
 
-Or manually with goose:
+Or manually with goose CLI:
 
 ```bash
 cd api
@@ -212,9 +211,9 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/storage-pi/api
-EnvironmentFile=/home/pi/storage-pi/api/.env
-ExecStart=/home/pi/storage-pi/api/storage-api
+WorkingDirectory=/home/pi/storage-api
+EnvironmentFile=/home/pi/storage-api/.env
+ExecStart=/home/pi/storage-api/storage-api
 Restart=on-failure
 RestartSec=5s
 
@@ -365,6 +364,16 @@ go fmt ./...
 
 ## Deployment
 
+For automated deployment setup with GitHub Actions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed instructions.
+
+### Quick Deployment
+
+```bash
+# Manual deployment on Pi
+cd /home/pi/storage-api
+./deploy.sh
+```
+
 ### Raspberry Pi Considerations
 
 #### Hardware Recommendations
@@ -418,19 +427,38 @@ sudo systemctl restart storage-api
 ## Project Structure
 
 ```
-storage-pi/
-├── api/
-│   ├── main.go              # Application entry point & HTTP handlers
-│   ├── go.mod               # Go module definition
-│   ├── go.sum               # Dependency checksums
-│   ├── storage-api          # Compiled binary (gitignored)
-│   ├── migrate.sh           # Database migration script
-│   └── migrations/          # SQL migration files
-│       ├── 20260104085419_init_households_users.sql
-│       └── 20260106033915_add_storage_items.sql
-├── infra/
-│   └── docker-compose.yml   # PostgreSQL container configuration
+storage-api/
+├── cmd/                     # Application entry points
+│   └── server/
+│       └── main.go          # API server entry point
+├── internal/                # Private application code
+│   ├── config/
+│   │   └── config.go        # Configuration loading
+│   ├── models/
+│   │   └── user.go          # Data models
+│   ├── database/
+│   │   └── users.go         # Database queries
+│   ├── handlers/
+│   │   ├── health.go        # Health check handlers
+│   │   ├── users.go         # User handlers
+│   │   └── json.go          # JSON utilities
+│   └── server/
+│       └── server.go        # HTTP server setup & routing
+├── migrations/              # SQL migration files
+│   ├── 20260104085419_init_households_users.sql
+│   └── 20260106033915_add_storage_items.sql
+├── migrate.sh               # Database migration script
+├── deploy.sh                # Deployment script
+├── DEPLOYMENT.md            # Deployment setup guide
+├── .github/
+│   └── workflows/
+│       ├── ci.yml           # GitHub Actions CI pipeline
+│       └── deploy.yml       # GitHub Actions deployment
+├── docker-compose.yml       # PostgreSQL container configuration
+├── .env                     # Environment configuration (gitignored)
 ├── .gitignore               # Git ignore patterns
+├── go.mod                   # Go module definition
+├── go.sum                   # Dependency checksums
 └── README.md                # This file
 ```
 
