@@ -36,13 +36,13 @@ jobs:
             StrictHostKeyChecking no
           EOF
         env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_SECRET }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
       - name: Deploy via SSH through Cloudflare Tunnel
         env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_SECRET }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           ssh pi-via-cloudflare << 'ENDSSH'
             cd /home/pi/storage-api
