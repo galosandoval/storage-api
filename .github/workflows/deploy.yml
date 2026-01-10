@@ -1,0 +1,60 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy to Pi
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install cloudflared
+        run: |
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
+          cloudflared --version
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/github_actions_key
+          chmod 600 ~/.ssh/github_actions_key
+
+      - name: Configure SSH for Cloudflare Access
+        run: |
+          cat >> ~/.ssh/config << 'EOF'
+          Host pi-via-cloudflare
+            HostName ${{ secrets.PI_HOST }}
+            User ${{ secrets.PI_USER }}
+            Port ${{ secrets.PI_PORT }}
+            IdentityFile ~/.ssh/github_actions_key
+            ProxyCommand cloudflared access ssh --hostname %h
+            StrictHostKeyChecking no
+          EOF
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_SECRET }}
+
+      - name: Deploy via SSH through Cloudflare Tunnel
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_SERVICE_TOKEN_SECRET }}
+        run: |
+          ssh pi-via-cloudflare << 'ENDSSH'
+            cd /home/pi/storage-api
+            ./deploy.sh
+          ENDSSH
+
+      - name: Deployment Status
+        if: success()
+        run: echo "✅ Deployment to Raspberry Pi completed successfully!"
+
+      - name: Deployment Failed
+        if: failure()
+        run: |
+          echo "❌ Deployment failed. Please check the logs above."
+          exit 1
