@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allows manual triggering from GitHub UI
+  workflow_dispatch: # Allows manual triggering from GitHub UI
 
 jobs:
   deploy:
@@ -17,6 +17,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       - name: Setup SSH key
         run: |
