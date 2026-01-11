@@ -12,11 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install cloudflared
-        run: |
-          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared-linux-amd64.deb
-          cloudflared --version
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       - name: Setup SSH key
         run: |
@@ -24,27 +25,20 @@ jobs:
           echo "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/github_actions_key
           chmod 600 ~/.ssh/github_actions_key
 
-      - name: Configure SSH for Cloudflare Access
+      - name: Configure SSH
         run: |
           cat >> ~/.ssh/config << 'EOF'
-          Host pi-via-cloudflare
-            HostName ${{ secrets.PI_HOST }}
+          Host raspberry-pi
+            HostName ${{ secrets.PI_TAILSCALE_IP }}
             User ${{ secrets.PI_USER }}
-            Port ${{ secrets.PI_PORT }}
+            Port 22
             IdentityFile ~/.ssh/github_actions_key
-            ProxyCommand cloudflared access ssh --hostname %h
             StrictHostKeyChecking no
           EOF
-        env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
-      - name: Deploy via SSH through Cloudflare Tunnel
-        env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      - name: Deploy via SSH through Tailscale
         run: |
-          ssh pi-via-cloudflare << 'ENDSSH'
+          ssh raspberry-pi << 'ENDSSH'
             cd /home/pi/storage-api
             ./deploy.sh
           ENDSSH
