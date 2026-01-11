@@ -12,6 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build ARM64 binary
+        run: |
+          GOOS=linux GOARCH=arm64 go build -o storage-api ./cmd/server
+          chmod +x storage-api
+
       - name: Setup Tailscale
         uses: tailscale/github-action@v2
         with:
@@ -36,11 +49,23 @@ jobs:
             StrictHostKeyChecking no
           EOF
 
-      - name: Deploy via SSH through Tailscale
+      - name: Deploy binary to Pi
         run: |
+          echo "📦 Copying binary to Pi..."
+          scp storage-api raspberry-pi:/home/pi/storage-api/storage-api
+
+          echo "🔄 Restarting service..."
           ssh raspberry-pi << 'ENDSSH'
-            cd /home/pi/storage-api
-            ./deploy.sh
+            sudo systemctl restart storage-api
+            sleep 2
+            if sudo systemctl is-active --quiet storage-api; then
+              echo "✅ Service is running"
+              curl -f http://localhost:8080/health || echo "⚠️  Health check failed"
+            else
+              echo "❌ Service failed to start"
+              sudo systemctl status storage-api
+              exit 1
+            fi
           ENDSSH
 
       - name: Deployment Status

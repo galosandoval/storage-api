@@ -14,7 +14,7 @@ type HealthHandler struct {
 }
 
 func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
-	fmt.Println("NewHealthHandlerv3")
+	fmt.Println("NewHealthHandlerv4")
 
 	return &HealthHandler{db: db}
 }
@@ -40,4 +40,3 @@ func (h *HealthHandler) HealthDB(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "db_ok"})
 }
-
