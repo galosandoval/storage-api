@@ -14,14 +14,14 @@ type HealthHandler struct {
 }
 
 func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
-	fmt.Println("NewHealthHandlerv7")
+	fmt.Println("NewHealthHandlerv8")
 
 	return &HealthHandler{db: db}
 }
 
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status": "ok",
+		"status": "ok8",
 		"time":   time.Now().Format(time.RFC3339),
 	})
 }
