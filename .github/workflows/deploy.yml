@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
       - name: Build ARM64 binary
         run: |
@@ -51,6 +51,9 @@ jobs:
 
       - name: Deploy binary to Pi
         run: |
+          echo "📁 Creating directory structure..."
+          ssh raspberry-pi "mkdir -p /home/pi/storage-api"
+
           echo "📦 Copying binary to Pi..."
           scp storage-api raspberry-pi:/home/pi/storage-api/storage-api
 
