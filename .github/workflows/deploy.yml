@@ -52,14 +52,17 @@ jobs:
       - name: Deploy binary to Pi
         run: |
           echo "📁 Creating directory structure..."
-          ssh raspberry-pi "mkdir -p /home/pi/storage-api"
+          ssh raspberry-pi "sudo mkdir -p /home/pi/storage-api && sudo chown -R \$(whoami):\$(whoami) /home/pi/storage-api"
+
+          echo "⏹️ Stopping service before deploy..."
+          ssh raspberry-pi "sudo systemctl stop storage-api || true"
 
           echo "📦 Copying binary to Pi..."
           scp storage-api raspberry-pi:/home/pi/storage-api/storage-api
 
-          echo "🔄 Restarting service..."
+          echo "🔄 Starting service..."
           ssh raspberry-pi << 'ENDSSH'
-            sudo systemctl restart storage-api
+            sudo systemctl start storage-api
             sleep 2
             if sudo systemctl is-active --quiet storage-api; then
               echo "✅ Service is running"
