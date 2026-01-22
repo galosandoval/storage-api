@@ -9,6 +9,7 @@ import (
 	"storage-api/internal/config"
 	"storage-api/internal/handlers"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -43,12 +44,23 @@ func New(cfg config.Config) (*Server, error) {
 }
 
 func (s *Server) routes() {
+	// CORS middleware - allow frontend connections
+	s.router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Configure for production
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
 	healthHandler := handlers.NewHealthHandler(s.db)
 	userHandler := handlers.NewUserHandler(s.db)
+	logsHandler := handlers.NewLogsHandler()
 
 	s.router.Get("/health", healthHandler.Health)
 	s.router.Get("/health/db", healthHandler.HealthDB)
 	s.router.Get("/v1/me", userHandler.GetMe)
+	s.router.Get("/v1/logs/stream", logsHandler.StreamLogs)
 }
 
 func (s *Server) Start() error {
