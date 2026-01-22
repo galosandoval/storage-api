@@ -14,7 +14,7 @@ type HealthHandler struct {
 }
 
 func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
-	fmt.Println("NewHealthHandlerv8")
+	fmt.Println("NewHealthHandlerv9")
 	return &HealthHandler{db: db}
 }
 
