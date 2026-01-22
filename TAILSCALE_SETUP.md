@@ -184,7 +184,7 @@ Allow the Pi user to restart the service without password:
 
 ```bash
 # SSH to your Pi
-ssh pi@100.64.1.2
+ssh -i ~/.ssh/github_actions_tailscale pi@100.64.1.2
 
 # Edit sudoers
 sudo visudo -f /etc/sudoers.d/storage-api
