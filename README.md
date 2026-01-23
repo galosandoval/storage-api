@@ -103,11 +103,10 @@ go mod download
 ### 3. Build the Application
 
 ```bash
-cd api
 go build -o storage-api
 ```
 
-The compiled binary will be created as `api/storage-api`.
+The compiled binary will be created as `storage-api`.
 
 ## Configuration
 

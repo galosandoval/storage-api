@@ -9,3 +9,8 @@ type User struct {
 	CreatedAt   string `json:"createdAt"`
 }
 
+type Household struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+}
