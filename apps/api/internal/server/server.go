@@ -73,6 +73,7 @@ func (s *Server) routes() {
 	s.router.Get("/v1/media", mediaHandler.List)
 	s.router.Get("/v1/media/{id}", mediaHandler.Get)
 	s.router.Get("/v1/media/{id}/download", mediaHandler.Download)
+	s.router.Get("/v1/media/{id}/thumbnail", mediaHandler.Thumbnail)
 	s.router.Get("/v1/media/{id}/original", mediaHandler.Original)
 	s.router.Delete("/v1/media/{id}", mediaHandler.Delete)
 }

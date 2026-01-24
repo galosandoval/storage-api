@@ -1,0 +1,337 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
+import {
+  ArrowLeft,
+  Calendar,
+  Camera,
+  MapPin,
+  FileImage,
+  Clock,
+  Aperture,
+  Focus,
+  Sun,
+  Download,
+  Loader2
+} from 'lucide-react'
+import { useMediaItem } from '@/hooks/use-media'
+import { getMediaUrl, getMediaBlob } from '@/lib/media-api'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+function formatDate(dateString?: string): string | null {
+  if (!dateString) return null
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return null
+  }
+}
+
+function formatFileSize(bytes?: number): string | null {
+  if (!bytes) return null
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = bytes
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex++
+  }
+  return `${size.toFixed(1)} ${units[unitIndex]}`
+}
+
+function formatDuration(seconds?: number): string | null {
+  if (!seconds) return null
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  if (mins > 0) {
+    return `${mins}m ${secs}s`
+  }
+  return `${secs}s`
+}
+
+function formatCoordinates(lat?: number, lon?: number): string | null {
+  if (lat === undefined || lon === undefined) return null
+  const latDir = lat >= 0 ? 'N' : 'S'
+  const lonDir = lon >= 0 ? 'E' : 'W'
+  return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lon).toFixed(6)}° ${lonDir}`
+}
+
+export default function MediaDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const { data: item, isLoading, error } = useMediaItem(id)
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null)
+  const [isMediaLoading, setIsMediaLoading] = useState(true)
+
+  // Load full-size media
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+
+    async function loadMedia() {
+      try {
+        setIsMediaLoading(true)
+        const url = await getMediaBlob(id)
+        if (!cancelled) {
+          setMediaUrl(url)
+        }
+      } catch {
+        // Fall back to direct URL
+        if (!cancelled) {
+          setMediaUrl(getMediaUrl(id))
+        }
+      } finally {
+        if (!cancelled) {
+          setIsMediaLoading(false)
+        }
+      }
+    }
+
+    loadMedia()
+
+    return () => {
+      cancelled = true
+      if (mediaUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaUrl)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <Loader2 className='size-8 animate-spin text-muted-foreground' />
+      </div>
+    )
+  }
+
+  if (error || !item) {
+    return (
+      <div className='min-h-screen flex flex-col items-center justify-center gap-4'>
+        <p className='text-lg text-muted-foreground'>Media not found</p>
+        <Link href='/'>
+          <Button variant='outline'>
+            <ArrowLeft className='size-4 mr-2' />
+            Back to Gallery
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const displayDate = formatDate(item.takenAt) || formatDate(item.createdAt)
+  const coordinates = formatCoordinates(item.latitude, item.longitude)
+  const fileSize = formatFileSize(item.sizeBytes)
+  const dimensions =
+    item.width && item.height ? `${item.width} × ${item.height}` : null
+  const duration = formatDuration(item.durationSec)
+
+  return (
+    <div className='min-h-screen bg-background'>
+      {/* Header */}
+      <header className='sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
+        <div className='container flex h-14 items-center gap-4'>
+          <Link href='/'>
+            <Button variant='ghost' size='sm'>
+              <ArrowLeft className='size-4 mr-2' />
+              Back
+            </Button>
+          </Link>
+          <div className='flex-1' />
+          <a
+            href={getMediaUrl(id)}
+            download={item.originalFilename || `media-${id}`}
+          >
+            <Button variant='outline' size='sm'>
+              <Download className='size-4 mr-2' />
+              Download
+            </Button>
+          </a>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className='container py-6'>
+        <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
+          {/* Media display */}
+          <div className='relative flex items-center justify-center min-h-[400px] lg:min-h-[600px] bg-muted rounded-lg overflow-hidden'>
+            {isMediaLoading && (
+              <div className='absolute inset-0 flex items-center justify-center'>
+                <Loader2 className='size-8 animate-spin text-muted-foreground' />
+              </div>
+            )}
+
+            {mediaUrl && item.type === 'photo' && (
+              <img
+                src={mediaUrl}
+                alt={item.originalFilename || 'Photo'}
+                className='max-w-full max-h-[80vh] object-contain'
+                onLoad={() => setIsMediaLoading(false)}
+              />
+            )}
+
+            {mediaUrl && item.type === 'video' && (
+              <video
+                src={mediaUrl}
+                controls
+                autoPlay
+                className='max-w-full max-h-[80vh]'
+                onLoadedData={() => setIsMediaLoading(false)}
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+          </div>
+
+          {/* Metadata panel */}
+          <div className='space-y-4'>
+            {/* Date & Time */}
+            {displayDate && (
+              <Card>
+                <CardHeader className='pb-2'>
+                  <CardTitle className='text-sm font-medium flex items-center gap-2'>
+                    <Calendar className='size-4' />
+                    Date & Time
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className='text-sm text-muted-foreground'>{displayDate}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Camera Info */}
+            {(item.cameraMake || item.cameraModel) && (
+              <Card>
+                <CardHeader className='pb-2'>
+                  <CardTitle className='text-sm font-medium flex items-center gap-2'>
+                    <Camera className='size-4' />
+                    Camera
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='space-y-1'>
+                  {item.cameraMake && (
+                    <p className='text-sm text-muted-foreground'>
+                      {item.cameraMake}
+                    </p>
+                  )}
+                  {item.cameraModel && (
+                    <p className='text-sm font-medium'>{item.cameraModel}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Technical Details */}
+            {(item.iso ||
+              item.fNumber ||
+              item.exposureTime ||
+              item.focalLength) && (
+              <Card>
+                <CardHeader className='pb-2'>
+                  <CardTitle className='text-sm font-medium flex items-center gap-2'>
+                    <Aperture className='size-4' />
+                    Camera Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className='grid grid-cols-2 gap-2 text-sm'>
+                    {item.fNumber && (
+                      <div className='flex items-center gap-1.5'>
+                        <Aperture className='size-3.5 text-muted-foreground' />
+                        <span>f/{item.fNumber.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {item.exposureTime && (
+                      <div className='flex items-center gap-1.5'>
+                        <Clock className='size-3.5 text-muted-foreground' />
+                        <span>{item.exposureTime}s</span>
+                      </div>
+                    )}
+                    {item.iso && (
+                      <div className='flex items-center gap-1.5'>
+                        <Sun className='size-3.5 text-muted-foreground' />
+                        <span>ISO {item.iso}</span>
+                      </div>
+                    )}
+                    {item.focalLength && (
+                      <div className='flex items-center gap-1.5'>
+                        <Focus className='size-3.5 text-muted-foreground' />
+                        <span>{item.focalLength.toFixed(0)}mm</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Location */}
+            {coordinates && (
+              <Card>
+                <CardHeader className='pb-2'>
+                  <CardTitle className='text-sm font-medium flex items-center gap-2'>
+                    <MapPin className='size-4' />
+                    Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className='text-sm text-muted-foreground font-mono'>
+                    {coordinates}
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-xs text-primary hover:underline mt-1 inline-block'
+                  >
+                    View on Google Maps
+                  </a>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* File Info */}
+            <Card>
+              <CardHeader className='pb-2'>
+                <CardTitle className='text-sm font-medium flex items-center gap-2'>
+                  <FileImage className='size-4' />
+                  File Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-1 text-sm'>
+                {item.originalFilename && (
+                  <p className='text-muted-foreground truncate'>
+                    {item.originalFilename}
+                  </p>
+                )}
+                <div className='flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground'>
+                  <span className='capitalize'>{item.type}</span>
+                  {dimensions && <span>{dimensions}</span>}
+                  {fileSize && <span>{fileSize}</span>}
+                  {duration && <span>{duration}</span>}
+                </div>
+                {item.mimeType && (
+                  <p className='text-xs text-muted-foreground/70 font-mono'>
+                    {item.mimeType}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}

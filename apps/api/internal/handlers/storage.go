@@ -4,13 +4,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"image"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/disintegration/imaging"
 )
+
+// ThumbnailSize is the maximum dimension for generated thumbnails
+const ThumbnailSize = 300
 
 // SavedFile contains metadata about a successfully saved file.
 type SavedFile struct {
@@ -20,6 +27,8 @@ type SavedFile struct {
 	SHA256              string
 	PreviewRelativePath string // Path to JPEG preview (for HEIC files)
 	PreviewFullPath     string // Full path to preview
+	ThumbnailRelPath    string // Path to thumbnail (relative)
+	ThumbnailFullPath   string // Full path to thumbnail
 
 	// Extracted metadata
 	Metadata *ImageMetadata
@@ -80,11 +89,35 @@ func SaveUploadedFile(src io.Reader, mediaType, filename, mimeType string) (*Sav
 			if meta, err := ExtractImageMetadata(previewPath); err == nil {
 				result.Metadata = meta
 			}
+
+			// Generate thumbnail from the JPEG preview
+			if thumbFull, thumbRel, err := GenerateImageThumbnail(previewPath, relativePath); err == nil {
+				result.ThumbnailFullPath = thumbFull
+				result.ThumbnailRelPath = thumbRel
+			} else {
+				fmt.Printf("Warning: failed to generate thumbnail for HEIC: %v\n", err)
+			}
 		}
 	} else if strings.HasPrefix(mimeType, "image/") {
 		// Extract metadata from JPEG/PNG directly
 		if meta, err := ExtractImageMetadata(fullPath); err == nil {
 			result.Metadata = meta
+		}
+
+		// Generate thumbnail for image
+		if thumbFull, thumbRel, err := GenerateImageThumbnail(fullPath, relativePath); err == nil {
+			result.ThumbnailFullPath = thumbFull
+			result.ThumbnailRelPath = thumbRel
+		} else {
+			fmt.Printf("Warning: failed to generate thumbnail: %v\n", err)
+		}
+	} else if strings.HasPrefix(mimeType, "video/") {
+		// Generate thumbnail from video frame
+		if thumbFull, thumbRel, err := GenerateVideoThumbnail(fullPath, relativePath); err == nil {
+			result.ThumbnailFullPath = thumbFull
+			result.ThumbnailRelPath = thumbRel
+		} else {
+			fmt.Printf("Warning: failed to generate video thumbnail: %v\n", err)
 		}
 	}
 
@@ -146,3 +179,111 @@ func getMediaBasePath() string {
 	}
 	return "/mnt/storage/media"
 }
+
+// getThumbnailPath generates the thumbnail path for a given relative path.
+// Thumbnails are stored in .thumbs/ directory mirroring the original structure.
+func getThumbnailPath(relativePath string) (fullPath, relPath string) {
+	// Always use .jpg extension for thumbnails
+	ext := filepath.Ext(relativePath)
+	basePath := strings.TrimSuffix(relativePath, ext) + ".jpg"
+	relPath = filepath.Join(".thumbs", basePath)
+	fullPath = filepath.Join(getMediaBasePath(), relPath)
+	return fullPath, relPath
+}
+
+// GenerateImageThumbnail creates a 300px thumbnail for an image file.
+// Returns the full path and relative path to the thumbnail.
+func GenerateImageThumbnail(srcPath, originalRelPath string) (fullPath, relPath string, err error) {
+	// Open source image
+	src, err := imaging.Open(srcPath, imaging.AutoOrientation(true))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to open image: %w", err)
+	}
+
+	// Resize to fit in ThumbnailSize x ThumbnailSize, maintaining aspect ratio
+	thumb := imaging.Fit(src, ThumbnailSize, ThumbnailSize, imaging.Lanczos)
+
+	// Get thumbnail paths
+	fullPath, relPath = getThumbnailPath(originalRelPath)
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return "", "", fmt.Errorf("failed to create thumbnail directory: %w", err)
+	}
+
+	// Save thumbnail as JPEG with quality 80
+	if err := imaging.Save(thumb, fullPath, imaging.JPEGQuality(80)); err != nil {
+		return "", "", fmt.Errorf("failed to save thumbnail: %w", err)
+	}
+
+	return fullPath, relPath, nil
+}
+
+// GenerateVideoThumbnail extracts a frame from a video and creates a thumbnail.
+// Uses ffmpeg to extract a frame at 1 second (or first frame if video is shorter).
+func GenerateVideoThumbnail(srcPath, originalRelPath string) (fullPath, relPath string, err error) {
+	// Get thumbnail paths
+	fullPath, relPath = getThumbnailPath(originalRelPath)
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return "", "", fmt.Errorf("failed to create thumbnail directory: %w", err)
+	}
+
+	// Create a temporary file for the extracted frame
+	tempFrame := fullPath + ".temp.jpg"
+	defer os.Remove(tempFrame) // Clean up temp file
+
+	// Use ffmpeg to extract a frame at 1 second
+	// -ss 1: seek to 1 second
+	// -vframes 1: extract 1 frame
+	// -q:v 2: high quality JPEG
+	cmd := exec.Command("ffmpeg",
+		"-y",             // Overwrite output
+		"-ss", "1",       // Seek to 1 second
+		"-i", srcPath,    // Input file
+		"-vframes", "1",  // Extract 1 frame
+		"-q:v", "2",      // High quality
+		tempFrame,        // Output to temp file
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// Try extracting first frame if seeking fails (for very short videos)
+		cmd = exec.Command("ffmpeg",
+			"-y",
+			"-i", srcPath,
+			"-vframes", "1",
+			"-q:v", "2",
+			tempFrame,
+		)
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return "", "", fmt.Errorf("ffmpeg failed: %v, output: %s", err, string(output))
+		}
+	}
+
+	// Resize the extracted frame to thumbnail size
+	img, err := imaging.Open(tempFrame)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to open extracted frame: %w", err)
+	}
+
+	thumb := imaging.Fit(img, ThumbnailSize, ThumbnailSize, imaging.Lanczos)
+	if err := imaging.Save(thumb, fullPath, imaging.JPEGQuality(80)); err != nil {
+		return "", "", fmt.Errorf("failed to save video thumbnail: %w", err)
+	}
+
+	return fullPath, relPath, nil
+}
+
+// CleanupThumbnail removes a thumbnail file from disk.
+func CleanupThumbnail(relativePath string) {
+	if relativePath == "" {
+		return
+	}
+	fullPath := filepath.Join(getMediaBasePath(), relativePath)
+	os.Remove(fullPath)
+}
+
+// Ensure imaging library types are recognized
+var _ image.Image

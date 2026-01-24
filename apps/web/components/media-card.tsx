@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MoreVertical, Trash2, Play } from 'lucide-react'
-import { getMediaBlob } from '@/lib/media-api'
+import Link from 'next/link'
+import { MoreVertical, Trash2, Play, Camera, Calendar } from 'lucide-react'
+import { useThumbnail } from '@/hooks/use-media'
 import type { MediaItem } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 
 interface MediaCardProps {
   item: MediaItem
-  onClick: () => void
   onDelete: () => void
 }
 
@@ -25,50 +24,30 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-export function MediaCard({ item, onClick, onDelete }: MediaCardProps) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(false)
+function formatDate(dateString?: string): string | null {
+  if (!dateString) return null
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch {
+    return null
+  }
+}
 
-  useEffect(() => {
-    let cancelled = false
+export function MediaCard({ item, onDelete }: MediaCardProps) {
+  const { data: thumbnailUrl, isLoading, isError } = useThumbnail(item.id)
 
-    async function loadMedia() {
-      try {
-        setIsLoading(true)
-        setError(false)
-        const url = await getMediaBlob(item.id)
-        if (!cancelled) {
-          setBlobUrl(url)
-        }
-      } catch {
-        if (!cancelled) {
-          setError(true)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    loadMedia()
-
-    return () => {
-      cancelled = true
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.id])
+  const displayDate = formatDate(item.takenAt) || formatDate(item.createdAt)
+  const cameraInfo = item.cameraModel || item.cameraMake
 
   return (
     <div className='group relative aspect-square overflow-hidden rounded-lg bg-muted'>
-      {/* Media content */}
-      <button
-        type='button'
-        onClick={onClick}
+      {/* Media content - wrapped in Link for navigation */}
+      <Link
+        href={`/media/${item.id}`}
         className='absolute inset-0 w-full h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       >
         {isLoading && (
@@ -77,41 +56,26 @@ export function MediaCard({ item, onClick, onDelete }: MediaCardProps) {
           </div>
         )}
 
-        {error && (
+        {isError && (
           <div className='absolute inset-0 flex items-center justify-center text-muted-foreground text-sm'>
             Failed to load
           </div>
         )}
 
-        {blobUrl && !error && (
-          <>
-            {item.type === 'photo' ? (
-              <img
-                src={blobUrl}
-                alt=''
-                className={cn(
-                  'absolute inset-0 w-full h-full object-cover transition-transform duration-200',
-                  'group-hover:scale-105'
-                )}
-                loading='lazy'
-              />
-            ) : (
-              <video
-                src={blobUrl}
-                className={cn(
-                  'absolute inset-0 w-full h-full object-cover transition-transform duration-200',
-                  'group-hover:scale-105'
-                )}
-                muted
-                playsInline
-                preload='metadata'
-              />
+        {thumbnailUrl && !isError && (
+          <img
+            src={thumbnailUrl}
+            alt=''
+            className={cn(
+              'absolute inset-0 w-full h-full object-cover transition-transform duration-200',
+              'group-hover:scale-105'
             )}
-          </>
+            loading='lazy'
+          />
         )}
 
         {/* Video indicator */}
-        {item.type === 'video' && !isLoading && !error && (
+        {item.type === 'video' && !isLoading && !isError && (
           <>
             <div className='absolute inset-0 flex items-center justify-center'>
               <div className='rounded-full bg-black/50 p-3'>
@@ -125,10 +89,30 @@ export function MediaCard({ item, onClick, onDelete }: MediaCardProps) {
             )}
           </>
         )}
-      </button>
+
+        {/* Metadata overlay on hover */}
+        {!isLoading && !isError && (displayDate || cameraInfo) && (
+          <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+            <div className='flex items-center gap-2 text-xs text-white/90'>
+              {displayDate && (
+                <span className='flex items-center gap-1'>
+                  <Calendar className='size-3' />
+                  {displayDate}
+                </span>
+              )}
+              {cameraInfo && (
+                <span className='flex items-center gap-1 truncate'>
+                  <Camera className='size-3' />
+                  <span className='truncate'>{cameraInfo}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </Link>
 
       {/* Action menu */}
-      <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+      <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10'>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
 jobs:
@@ -61,6 +64,18 @@ jobs:
           echo "📦 Copying binary to Pi..."
           scp storage-api raspberry-pi:/home/pi/storage-api/storage-api
 
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "📦 Copying migrations to Pi..."
+          scp -r apps/api/migrations raspberry-pi:/home/pi/storage-api/
+
+          echo "🗃️ Running migrations..."
+          ssh raspberry-pi "goose -dir /home/pi/storage-api/migrations postgres '$DATABASE_URL' up"
+
+      - name: Start service
+        run: |
           echo "🔄 Starting service..."
           ssh raspberry-pi << 'ENDSSH'
             sudo systemctl start storage-api

@@ -6,14 +6,12 @@ import { useMedia } from '@/hooks/use-media'
 import type { MediaItem, MediaTypeFilter } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
 import { MediaGrid } from '@/components/media-grid'
-import { MediaLightbox } from '@/components/media-lightbox'
 import { UploadDropzone } from '@/components/upload-dropzone'
 import { TypeFilter } from '@/components/type-filter'
 import { DeleteDialog } from '@/components/delete-dialog'
 
 export function MediaGallery() {
   const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>('all')
-  const [lightboxIndex, setLightboxIndex] = useState(-1)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
 
   const {
@@ -27,10 +25,6 @@ export function MediaGallery() {
     removeItem,
     sentinelRef
   } = useMedia({ typeFilter })
-
-  const handleItemClick = useCallback((_item: MediaItem, index: number) => {
-    setLightboxIndex(index)
-  }, [])
 
   const handleItemDelete = useCallback((item: MediaItem) => {
     setDeleteItem(item)
@@ -49,12 +43,8 @@ export function MediaGallery() {
   const handleDeleted = useCallback(
     (id: string) => {
       removeItem(id)
-      // If viewing this item in lightbox, close it
-      if (deleteItem?.id === id && lightboxIndex >= 0) {
-        setLightboxIndex(-1)
-      }
     },
-    [removeItem, deleteItem, lightboxIndex]
+    [removeItem]
   )
 
   return (
@@ -91,18 +81,8 @@ export function MediaGallery() {
         isLoading={isLoading}
         isLoadingMore={isLoadingMore}
         hasMore={hasMore}
-        onItemClick={handleItemClick}
         onItemDelete={handleItemDelete}
         sentinelRef={sentinelRef}
-      />
-
-      {/* Lightbox */}
-      <MediaLightbox
-        items={items}
-        currentIndex={lightboxIndex}
-        isOpen={lightboxIndex >= 0}
-        onClose={() => setLightboxIndex(-1)}
-        onIndexChange={setLightboxIndex}
       />
 
       {/* Delete confirmation dialog */}

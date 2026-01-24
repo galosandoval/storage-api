@@ -17,8 +17,9 @@ type MediaItem struct {
 	CreatedAt   string     `json:"createdAt"`
 	UpdatedAt   string     `json:"updatedAt"`
 
-	// Preview and original file paths
+	// Preview, thumbnail, and original file paths
 	PreviewPath      string `json:"previewPath,omitempty"`      // Path to JPEG preview (for HEIC files)
+	ThumbnailPath    string `json:"thumbnailPath,omitempty"`    // Path to thumbnail image
 	OriginalFilename string `json:"originalFilename,omitempty"` // Original filename from upload
 
 	// Camera metadata (from EXIF)

@@ -19,17 +19,17 @@ func CreateMediaItem(ctx context.Context, db *pgxpool.Pool, item *models.MediaIt
 		INSERT INTO storage_items (
 			household_id, path, type, mime_type, size_bytes, sha256,
 			taken_at, width, height, duration_sec,
-			preview_path, original_filename,
+			preview_path, thumbnail_path, original_filename,
 			camera_make, camera_model,
 			latitude, longitude,
 			orientation, iso, f_number, exposure_time, focal_length
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
 		RETURNING id::text, created_at, updated_at
 	`,
 		item.HouseholdID, item.Path, item.Type, item.MimeType, item.SizeBytes, item.SHA256,
 		item.TakenAt, item.Width, item.Height, item.DurationSec,
-		nullIfEmpty(item.PreviewPath), nullIfEmpty(item.OriginalFilename),
+		nullIfEmpty(item.PreviewPath), nullIfEmpty(item.ThumbnailPath), nullIfEmpty(item.OriginalFilename),
 		nullIfEmpty(item.CameraMake), nullIfEmpty(item.CameraModel),
 		item.Latitude, item.Longitude,
 		nullIfZero(item.Orientation), nullIfZero(item.ISO), item.FNumber, nullIfEmpty(item.ExposureTime), item.FocalLength,
@@ -52,7 +52,7 @@ func GetMediaItemByID(ctx context.Context, db *pgxpool.Pool, id string) (models.
 	var item models.MediaItem
 	var createdAt, updatedAt time.Time
 	var takenAt *time.Time
-	var previewPath, originalFilename, cameraMake, cameraModel, exposureTime *string
+	var previewPath, thumbnailPath, originalFilename, cameraMake, cameraModel, exposureTime *string
 	var orientation, iso *int
 	var latitude, longitude, fNumber, focalLength *float64
 
@@ -61,7 +61,7 @@ func GetMediaItemByID(ctx context.Context, db *pgxpool.Pool, id string) (models.
 		       COALESCE(mime_type, ''), COALESCE(size_bytes, 0), COALESCE(sha256, ''),
 		       taken_at, COALESCE(width, 0), COALESCE(height, 0), COALESCE(duration_sec, 0),
 		       created_at, updated_at,
-		       preview_path, original_filename,
+		       preview_path, thumbnail_path, original_filename,
 		       camera_make, camera_model,
 		       latitude, longitude,
 		       orientation, iso, f_number, exposure_time, focal_length
@@ -72,7 +72,7 @@ func GetMediaItemByID(ctx context.Context, db *pgxpool.Pool, id string) (models.
 		&item.MimeType, &item.SizeBytes, &item.SHA256,
 		&takenAt, &item.Width, &item.Height, &item.DurationSec,
 		&createdAt, &updatedAt,
-		&previewPath, &originalFilename,
+		&previewPath, &thumbnailPath, &originalFilename,
 		&cameraMake, &cameraModel,
 		&latitude, &longitude,
 		&orientation, &iso, &fNumber, &exposureTime, &focalLength,
@@ -89,6 +89,9 @@ func GetMediaItemByID(ctx context.Context, db *pgxpool.Pool, id string) (models.
 	// Set optional fields
 	if previewPath != nil {
 		item.PreviewPath = *previewPath
+	}
+	if thumbnailPath != nil {
+		item.ThumbnailPath = *thumbnailPath
 	}
 	if originalFilename != nil {
 		item.OriginalFilename = *originalFilename
@@ -137,7 +140,7 @@ func ListMediaItems(ctx context.Context, db *pgxpool.Pool, householdID string, p
 		       COALESCE(mime_type, ''), COALESCE(size_bytes, 0), COALESCE(sha256, ''),
 		       taken_at, COALESCE(width, 0), COALESCE(height, 0), COALESCE(duration_sec, 0),
 		       created_at, updated_at,
-		       preview_path, original_filename,
+		       preview_path, thumbnail_path, original_filename,
 		       camera_make, camera_model,
 		       latitude, longitude,
 		       orientation, iso, f_number, exposure_time, focal_length
@@ -156,7 +159,7 @@ func ListMediaItems(ctx context.Context, db *pgxpool.Pool, householdID string, p
 		var item models.MediaItem
 		var createdAt, updatedAt time.Time
 		var takenAt *time.Time
-		var previewPath, originalFilename, cameraMake, cameraModel, exposureTime *string
+		var previewPath, thumbnailPath, originalFilename, cameraMake, cameraModel, exposureTime *string
 		var orientation, iso *int
 		var latitude, longitude, fNumber, focalLength *float64
 
@@ -165,7 +168,7 @@ func ListMediaItems(ctx context.Context, db *pgxpool.Pool, householdID string, p
 			&item.MimeType, &item.SizeBytes, &item.SHA256,
 			&takenAt, &item.Width, &item.Height, &item.DurationSec,
 			&createdAt, &updatedAt,
-			&previewPath, &originalFilename,
+			&previewPath, &thumbnailPath, &originalFilename,
 			&cameraMake, &cameraModel,
 			&latitude, &longitude,
 			&orientation, &iso, &fNumber, &exposureTime, &focalLength,
@@ -181,6 +184,9 @@ func ListMediaItems(ctx context.Context, db *pgxpool.Pool, householdID string, p
 		// Set optional fields
 		if previewPath != nil {
 			item.PreviewPath = *previewPath
+		}
+		if thumbnailPath != nil {
+			item.ThumbnailPath = *thumbnailPath
 		}
 		if originalFilename != nil {
 			item.OriginalFilename = *originalFilename
@@ -236,7 +242,7 @@ func GetMediaItemByPath(ctx context.Context, db *pgxpool.Pool, householdID, path
 	var item models.MediaItem
 	var createdAt, updatedAt time.Time
 	var takenAt *time.Time
-	var previewPath, originalFilename, cameraMake, cameraModel, exposureTime *string
+	var previewPath, thumbnailPath, originalFilename, cameraMake, cameraModel, exposureTime *string
 	var orientation, iso *int
 	var latitude, longitude, fNumber, focalLength *float64
 
@@ -245,7 +251,7 @@ func GetMediaItemByPath(ctx context.Context, db *pgxpool.Pool, householdID, path
 		       COALESCE(mime_type, ''), COALESCE(size_bytes, 0), COALESCE(sha256, ''),
 		       taken_at, COALESCE(width, 0), COALESCE(height, 0), COALESCE(duration_sec, 0),
 		       created_at, updated_at,
-		       preview_path, original_filename,
+		       preview_path, thumbnail_path, original_filename,
 		       camera_make, camera_model,
 		       latitude, longitude,
 		       orientation, iso, f_number, exposure_time, focal_length
@@ -256,7 +262,7 @@ func GetMediaItemByPath(ctx context.Context, db *pgxpool.Pool, householdID, path
 		&item.MimeType, &item.SizeBytes, &item.SHA256,
 		&takenAt, &item.Width, &item.Height, &item.DurationSec,
 		&createdAt, &updatedAt,
-		&previewPath, &originalFilename,
+		&previewPath, &thumbnailPath, &originalFilename,
 		&cameraMake, &cameraModel,
 		&latitude, &longitude,
 		&orientation, &iso, &fNumber, &exposureTime, &focalLength,
@@ -273,6 +279,9 @@ func GetMediaItemByPath(ctx context.Context, db *pgxpool.Pool, householdID, path
 	// Set optional fields
 	if previewPath != nil {
 		item.PreviewPath = *previewPath
+	}
+	if thumbnailPath != nil {
+		item.ThumbnailPath = *thumbnailPath
 	}
 	if originalFilename != nil {
 		item.OriginalFilename = *originalFilename

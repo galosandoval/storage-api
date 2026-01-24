@@ -9,7 +9,6 @@ interface MediaGridProps {
   isLoading: boolean
   isLoadingMore: boolean
   hasMore: boolean
-  onItemClick: (item: MediaItem, index: number) => void
   onItemDelete: (item: MediaItem) => void
   sentinelRef: (node: HTMLElement | null) => void
 }
@@ -19,7 +18,6 @@ export function MediaGrid({
   isLoading,
   isLoadingMore,
   hasMore,
-  onItemClick,
   onItemDelete,
   sentinelRef
 }: MediaGridProps) {
@@ -45,11 +43,10 @@ export function MediaGrid({
   return (
     <div className='space-y-4'>
       <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3'>
-        {items.map((item, index) => (
+        {items.map((item) => (
           <MediaCard
             key={item.id}
             item={item}
-            onClick={() => onItemClick(item, index)}
             onDelete={() => onItemDelete(item)}
           />
         ))}
