@@ -104,6 +104,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		SizeBytes:        saved.Size,
 		SHA256:           saved.SHA256,
 		PreviewPath:      saved.PreviewRelativePath,
+		ThumbnailPath:    saved.ThumbnailRelPath,
 		OriginalFilename: header.Filename,
 	}
 
@@ -309,6 +310,57 @@ func (h *MediaHandler) Original(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fullPath)
 }
 
+// Thumbnail handles GET /v1/media/{id}/thumbnail
+// Serves the thumbnail image with aggressive caching headers
+func (h *MediaHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "missing id parameter",
+		})
+		return
+	}
+
+	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"error": "media item not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": fmt.Sprintf("failed to get media: %v", err),
+		})
+		return
+	}
+
+	// Check if thumbnail exists
+	if item.ThumbnailPath == "" {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error": "thumbnail not available",
+		})
+		return
+	}
+
+	fullPath := filepath.Join(getMediaBasePath(), item.ThumbnailPath)
+
+	// Check if file exists on disk
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error": "thumbnail file not found on disk",
+		})
+		return
+	}
+
+	// Set aggressive caching headers (1 year, immutable)
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+
+	// Serve the file
+	http.ServeFile(w, r, fullPath)
+}
+
 // Delete handles DELETE /v1/media/{id}
 func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
@@ -350,6 +402,12 @@ func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if item.PreviewPath != "" {
 		previewFullPath := filepath.Join(getMediaBasePath(), item.PreviewPath)
 		os.Remove(previewFullPath)
+	}
+
+	// Also delete thumbnail if exists
+	if item.ThumbnailPath != "" {
+		thumbnailFullPath := filepath.Join(getMediaBasePath(), item.ThumbnailPath)
+		os.Remove(thumbnailFullPath)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{

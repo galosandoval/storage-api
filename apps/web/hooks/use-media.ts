@@ -1,7 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { listMedia } from '@/lib/media-api'
+import { useCallback, useEffect, useRef } from 'react'
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  useQuery
+} from '@tanstack/react-query'
+import { listMedia, getMedia, getThumbnailBlob } from '@/lib/media-api'
 import type { MediaItem, MediaTypeFilter } from '@/lib/types/media'
 
 interface UseMediaOptions {
@@ -24,86 +29,92 @@ interface UseMediaReturn {
 
 export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
   const { pageSize = 20, typeFilter = 'all' } = options
-
-  const [items, setItems] = useState<MediaItem[]>([])
-  const [page, setPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(true)
+  const queryClient = useQueryClient()
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentinelNodeRef = useRef<HTMLElement | null>(null)
 
-  // Fetch media items
-  const fetchMedia = useCallback(
-    async (pageNum: number, append: boolean) => {
-      try {
-        if (append) {
-          setIsLoadingMore(true)
-        } else {
-          setIsLoading(true)
-        }
-        setError(null)
-
-        const response = await listMedia(pageNum, pageSize, typeFilter)
-
-        setItems((prev) => {
-          if (append) {
-            // Merge avoiding duplicates
-            const existingIds = new Set(prev.map((item) => item.id))
-            const newItems = response.items.filter(
-              (item) => !existingIds.has(item.id)
-            )
-            return [...prev, ...newItems]
-          }
-          return response.items
-        })
-
-        setHasMore(response.page * response.pageSize < response.totalCount)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load media')
-      } finally {
-        setIsLoading(false)
-        setIsLoadingMore(false)
-      }
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    error,
+    hasNextPage,
+    fetchNextPage,
+    refetch
+  } = useInfiniteQuery({
+    queryKey: ['media', typeFilter, pageSize],
+    queryFn: async ({ pageParam = 1 }) => {
+      return listMedia(pageParam, pageSize, typeFilter)
     },
-    [pageSize, typeFilter]
+    getNextPageParam: (lastPage) => {
+      const hasMore = lastPage.page * lastPage.pageSize < lastPage.totalCount
+      return hasMore ? lastPage.page + 1 : undefined
+    },
+    initialPageParam: 1
+  })
+
+  // Flatten pages into items array
+  const items = data?.pages.flatMap((page) => page.items) ?? []
+
+  // Load more callback
+  const loadMore = useCallback(() => {
+    if (!isFetchingNextPage && hasNextPage) {
+      fetchNextPage()
+    }
+  }, [isFetchingNextPage, hasNextPage, fetchNextPage])
+
+  // Refresh callback
+  const refresh = useCallback(() => {
+    refetch()
+  }, [refetch])
+
+  // Prepend a new item (after upload) - optimistic update
+  const prependItem = useCallback(
+    (item: MediaItem) => {
+      queryClient.setQueryData(
+        ['media', typeFilter, pageSize],
+        (oldData: typeof data) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page, index) => {
+              if (index === 0) {
+                return {
+                  ...page,
+                  items: [item, ...page.items],
+                  totalCount: page.totalCount + 1
+                }
+              }
+              return page
+            })
+          }
+        }
+      )
+    },
+    [queryClient, typeFilter, pageSize]
   )
 
-  // Initial load and filter change
-  useEffect(() => {
-    setPage(1)
-    setItems([])
-    setHasMore(true)
-    fetchMedia(1, false)
-  }, [fetchMedia])
-
-  // Load more
-  const loadMore = useCallback(() => {
-    if (isLoadingMore || !hasMore) return
-    const nextPage = page + 1
-    setPage(nextPage)
-    fetchMedia(nextPage, true)
-  }, [page, isLoadingMore, hasMore, fetchMedia])
-
-  // Refresh
-  const refresh = useCallback(() => {
-    setPage(1)
-    setItems([])
-    setHasMore(true)
-    fetchMedia(1, false)
-  }, [fetchMedia])
-
-  // Prepend a new item (after upload)
-  const prependItem = useCallback((item: MediaItem) => {
-    setItems((prev) => [item, ...prev])
-  }, [])
-
-  // Remove an item (after delete)
-  const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
-  }, [])
+  // Remove an item (after delete) - optimistic update
+  const removeItem = useCallback(
+    (id: string) => {
+      queryClient.setQueryData(
+        ['media', typeFilter, pageSize],
+        (oldData: typeof data) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((item) => item.id !== id),
+              totalCount: page.totalCount - 1
+            }))
+          }
+        }
+      )
+    },
+    [queryClient, typeFilter, pageSize]
+  )
 
   // Sentinel ref callback for IntersectionObserver
   const sentinelRef = useCallback(
@@ -123,8 +134,8 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
         (entries) => {
           if (
             entries[0]?.isIntersecting &&
-            hasMore &&
-            !isLoadingMore &&
+            hasNextPage &&
+            !isFetchingNextPage &&
             !isLoading
           ) {
             loadMore()
@@ -135,7 +146,7 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
 
       observerRef.current.observe(node)
     },
-    [hasMore, isLoadingMore, isLoading, loadMore]
+    [hasNextPage, isFetchingNextPage, isLoading, loadMore]
   )
 
   // Cleanup observer on unmount
@@ -150,13 +161,33 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
   return {
     items,
     isLoading,
-    isLoadingMore,
-    error,
-    hasMore,
+    isLoadingMore: isFetchingNextPage,
+    error: error instanceof Error ? error.message : null,
+    hasMore: hasNextPage ?? false,
     loadMore,
     refresh,
     prependItem,
     removeItem,
     sentinelRef
   }
+}
+
+// Hook for fetching a single media item
+export function useMediaItem(id: string) {
+  return useQuery({
+    queryKey: ['media', 'item', id],
+    queryFn: () => getMedia(id),
+    enabled: !!id
+  })
+}
+
+// Hook for fetching a thumbnail blob URL
+export function useThumbnail(id: string) {
+  return useQuery({
+    queryKey: ['thumbnail', id],
+    queryFn: () => getThumbnailBlob(id),
+    enabled: !!id,
+    staleTime: Infinity, // Thumbnails don't change
+    gcTime: 30 * 60 * 1000 // Keep in cache for 30 minutes
+  })
 }

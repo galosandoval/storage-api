@@ -12,6 +12,26 @@ export interface MediaItem {
   durationSec?: number
   createdAt: string
   updatedAt: string
+
+  // Preview, thumbnail, and original file paths
+  previewPath?: string
+  thumbnailPath?: string
+  originalFilename?: string
+
+  // Camera metadata (from EXIF)
+  cameraMake?: string
+  cameraModel?: string
+
+  // GPS coordinates (from EXIF)
+  latitude?: number
+  longitude?: number
+
+  // Technical metadata (from EXIF)
+  orientation?: number
+  iso?: number
+  fNumber?: number
+  exposureTime?: string
+  focalLength?: number
 }
 
 export interface MediaListResponse {
