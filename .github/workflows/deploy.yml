@@ -72,7 +72,7 @@ jobs:
           scp -r apps/api/migrations raspberry-pi:/home/pi/storage-api/
 
           echo "🗃️ Running migrations..."
-          ssh raspberry-pi "goose -dir /home/pi/storage-api/migrations postgres '$DATABASE_URL' up"
+          ssh raspberry-pi "goose -dir /home/pi/storage-api/migrations postgres \"$DATABASE_URL\" up"
 
       - name: Start service
         run: |
