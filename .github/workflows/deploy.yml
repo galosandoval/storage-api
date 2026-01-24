@@ -22,8 +22,9 @@ jobs:
 
       - name: Build ARM64 binary
         run: |
-          GOOS=linux GOARCH=arm64 go build -o storage-api ./cmd/server
-          chmod +x storage-api
+          cd apps/api
+          GOOS=linux GOARCH=arm64 go build -o ../../storage-api ./cmd/server
+          chmod +x ../../storage-api
 
       - name: Setup Tailscale
         uses: tailscale/github-action@v2

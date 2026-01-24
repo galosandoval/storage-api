@@ -40,3 +40,35 @@ func GetUserByExternalSub(ctx context.Context, db *pgxpool.Pool, sub string) (mo
 	return u, nil
 }
 
+// ListHouseholds returns all households
+func ListHouseholds(ctx context.Context, db *pgxpool.Pool) ([]models.Household, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	rows, err := db.Query(ctx, `
+		SELECT id::text, name, created_at
+		FROM households
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var households []models.Household
+	for rows.Next() {
+		var h models.Household
+		var created time.Time
+		if err := rows.Scan(&h.ID, &h.Name, &created); err != nil {
+			return nil, err
+		}
+		h.CreatedAt = created.Format(time.RFC3339)
+		households = append(households, h)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return households, nil
+}

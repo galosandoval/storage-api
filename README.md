@@ -1,10 +1,36 @@
-# Storage Pi
+# Laulo
 
-A lightweight, multi-tenant storage API built with Go and PostgreSQL, designed to run on Raspberry Pi.
+A monorepo containing the Laulo media storage platform - a lightweight, multi-tenant storage system built with Go and Next.js, designed to run on Raspberry Pi.
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat&logo=next.js)](https://nextjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-316192?style=flat&logo=postgresql)](https://www.postgresql.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+## Monorepo Structure
+
+```
+laulo/
+├── apps/
+│   ├── api/          # Go backend (storage-api)
+│   └── web/          # Next.js frontend
+├── package.json      # Root workspace config
+└── pnpm-workspace.yaml
+```
+
+## Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run web frontend
+pnpm dev:web
+
+# Run API (from apps/api directory)
+cd apps/api
+go run ./cmd/server
+```
 
 ## Table of Contents
 
@@ -89,25 +115,31 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/galosandoval/storage-api.git
-cd storage-api
+git clone https://github.com/galosandoval/laulo.git
+cd laulo
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-cd api
+# Install Node.js dependencies (for web frontend)
+pnpm install
+
+# Install Go dependencies (for API)
+cd apps/api
 go mod download
 ```
 
-### 3. Build the Application
+### 3. Build the Applications
 
 ```bash
-cd api
-go build -o storage-api
-```
+# Build web frontend
+pnpm build:web
 
-The compiled binary will be created as `api/storage-api`.
+# Build API
+cd apps/api
+go build -o storage-api ./cmd/server
+```
 
 ## Configuration
 
@@ -427,39 +459,29 @@ sudo systemctl restart storage-api
 ## Project Structure
 
 ```
-storage-api/
-├── cmd/                     # Application entry points
-│   └── server/
-│       └── main.go          # API server entry point
-├── internal/                # Private application code
-│   ├── config/
-│   │   └── config.go        # Configuration loading
-│   ├── models/
-│   │   └── user.go          # Data models
-│   ├── database/
-│   │   └── users.go         # Database queries
-│   ├── handlers/
-│   │   ├── health.go        # Health check handlers
-│   │   ├── users.go         # User handlers
-│   │   └── json.go          # JSON utilities
-│   └── server/
-│       └── server.go        # HTTP server setup & routing
-├── migrations/              # SQL migration files
-│   ├── 20260104085419_init_households_users.sql
-│   └── 20260106033915_add_storage_items.sql
-├── migrate.sh               # Database migration script
-├── deploy.sh                # Deployment script
-├── DEPLOYMENT.md            # Deployment setup guide
-├── .github/
-│   └── workflows/
-│       ├── ci.yml           # GitHub Actions CI pipeline
-│       └── deploy.yml       # GitHub Actions deployment
-├── docker-compose.yml       # PostgreSQL container configuration
-├── .env                     # Environment configuration (gitignored)
-├── .gitignore               # Git ignore patterns
-├── go.mod                   # Go module definition
-├── go.sum                   # Dependency checksums
-└── README.md                # This file
+laulo/
+├── apps/
+│   ├── api/                     # Go backend
+│   │   ├── cmd/server/          # API entry point
+│   │   ├── internal/            # Private application code
+│   │   │   ├── config/          # Configuration loading
+│   │   │   ├── models/          # Data models
+│   │   │   ├── database/        # Database queries
+│   │   │   ├── handlers/        # HTTP handlers
+│   │   │   └── server/          # HTTP server setup
+│   │   ├── migrations/          # SQL migration files
+│   │   ├── go.mod               # Go module definition
+│   │   └── docker-compose.yml   # PostgreSQL container
+│   └── web/                     # Next.js frontend
+│       ├── app/                 # Next.js app router
+│       ├── components/          # React components
+│       ├── hooks/               # Custom React hooks
+│       ├── lib/                 # Utilities and API client
+│       └── package.json         # Web dependencies
+├── .github/workflows/           # GitHub Actions
+├── package.json                 # Root workspace config
+├── pnpm-workspace.yaml          # pnpm workspace definition
+└── README.md                    # This file
 ```
 
 ## Troubleshooting

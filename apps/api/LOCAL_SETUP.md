@@ -20,7 +20,10 @@ POSTGRES_USER=storageapp
 POSTGRES_PASSWORD=change_me_now
 POSTGRES_DB=storage_db
 DATABASE_URL=postgres://storageapp:change_me_now@localhost:5432/storage_db?sslmode=disable
+MEDIA_PATH=/tmp/storage-api-media
 ```
+
+**Note:** `MEDIA_PATH` is where uploaded files are stored. On the Pi, this is `/mnt/storage/media` (RAID storage). For local dev, use a temp directory like `/tmp/storage-api-media`.
 
 ### 2. Start PostgreSQL
 
@@ -73,6 +76,15 @@ curl http://localhost:8080/health
 # Database health check
 curl http://localhost:8080/health/db
 # Expected: {"status":"db_ok"}
+
+# Test media endpoints (requires X-Household-ID header)
+HOUSEHOLD="00000000-0000-0000-0000-000000000001"
+
+# List media
+curl -H "X-Household-ID: $HOUSEHOLD" http://localhost:8080/v1/media
+
+# Upload a file
+curl -X POST -H "X-Household-ID: $HOUSEHOLD" -F "file=@/path/to/image.png" http://localhost:8080/v1/media/upload
 ```
 
 ### 7. Test with Environment Variables

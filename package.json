@@ -1,0 +1,11 @@
+{
+  "name": "laulo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter @laulo/web dev",
+    "build:web": "pnpm --filter @laulo/web build",
+    "lint:web": "pnpm --filter @laulo/web lint"
+  },
+  "devDependencies": {}
+}
