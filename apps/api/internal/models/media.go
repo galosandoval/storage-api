@@ -7,19 +7,19 @@ import (
 )
 
 type MediaItem struct {
-	ID               uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	HouseholdID      uuid.UUID  `gorm:"type:uuid;not null;index" json:"householdId"`
-	Path             string     `gorm:"size:512;not null" json:"path"`
-	Type             string     `gorm:"size:10;not null" json:"type"` // "photo" or "video"
-	MimeType         string     `gorm:"size:100" json:"mimeType,omitempty"`
-	SizeBytes        int64      `json:"sizeBytes,omitempty"`
-	SHA256           string     `gorm:"size:64" json:"sha256,omitempty"`
-	TakenAt          *time.Time `gorm:"index" json:"takenAt,omitempty"`
-	Width            int        `json:"width,omitempty"`
-	Height           int        `json:"height,omitempty"`
-	DurationSec      int        `json:"durationSec,omitempty"`
-	CreatedAt        time.Time  `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt        time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	HouseholdID uuid.UUID  `gorm:"type:uuid;not null;index" json:"householdId"`
+	Path        string     `gorm:"size:512;not null" json:"path"`
+	Type        string     `gorm:"size:10;not null" json:"type"` // "photo" or "video"
+	MimeType    string     `gorm:"size:100" json:"mimeType,omitempty"`
+	SizeBytes   int64      `json:"sizeBytes,omitempty"`
+	SHA256      string     `gorm:"size:64" json:"sha256,omitempty"`
+	TakenAt     *time.Time `gorm:"index" json:"takenAt,omitempty"`
+	Width       int        `json:"width,omitempty"`
+	Height      int        `json:"height,omitempty"`
+	DurationSec int        `json:"durationSec,omitempty"`
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Preview, thumbnail, and original file paths
 	PreviewPath      string `gorm:"size:512" json:"previewPath,omitempty"`
