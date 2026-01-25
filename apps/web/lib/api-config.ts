@@ -12,9 +12,9 @@
  */
 export function getApiBaseUrl(): string {
   // Option 1: Full URL provided
-  // if (process.env.PI_API_URL) {
-  //   return process.env.PI_API_URL.replace(/\/$/, '') // Remove trailing slash
-  // }
+  if (process.env.PI_API_URL) {
+    return process.env.PI_API_URL.replace(/\/$/, '') // Remove trailing slash
+  }
   console.log('process.env', process.env)
   // Option 2: Host + Port (for backward compatibility with NEXT_PUBLIC_PI_HOST)
   const host =
