@@ -15,11 +15,11 @@
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "pnpm --filter @laulo/web eslint --fix",
+      "pnpm --filter @laulo/web prettier --write"
     ],
     "apps/web/**/*.{js,jsx,json,css,md}": [
-      "prettier --write"
+      "pnpm --filter @laulo/web prettier --write"
     ],
     "apps/api/**/*.go": [
       "bash -c 'cd apps/api && golangci-lint run --fix ./...'"
