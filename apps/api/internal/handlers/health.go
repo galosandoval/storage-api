@@ -1,36 +1,31 @@
 package handlers
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"storage-api/internal/db"
+
+	"gorm.io/gorm"
 )
 
 type HealthHandler struct {
-	db *pgxpool.Pool
+	db *gorm.DB
 }
 
-func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
-	fmt.Println("NewHealthHandlerv9")
-	return &HealthHandler{db: db}
+func NewHealthHandler(database *gorm.DB) *HealthHandler {
+	return &HealthHandler{db: database}
 }
 
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status": "ok8",
+		"status": "ok",
 		"time":   time.Now().Format(time.RFC3339),
 	})
 }
 
 func (h *HealthHandler) HealthDB(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-	defer cancel()
-
-	var one int
-	if err := h.db.QueryRow(ctx, "SELECT 1").Scan(&one); err != nil {
+	if err := db.Ping(h.db); err != nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"status": "db_unhealthy",
 			"error":  err.Error(),

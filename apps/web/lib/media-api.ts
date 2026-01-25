@@ -52,29 +52,6 @@ export function getThumbnailUrl(id: string): string {
   return `/api/media/${id}/thumbnail`
 }
 
-export async function getMediaBlob(id: string): Promise<string> {
-  const response = await fetch(`/api/media/${id}/download`)
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch media')
-  }
-
-  const blob = await response.blob()
-  return URL.createObjectURL(blob)
-}
-
-export async function getThumbnailBlob(id: string): Promise<string> {
-  const response = await fetch(`/api/media/${id}/thumbnail`)
-
-  if (!response.ok) {
-    // Fallback to full image if thumbnail not available
-    return getMediaBlob(id)
-  }
-
-  const blob = await response.blob()
-  return URL.createObjectURL(blob)
-}
-
 export interface UploadOptions {
   file: File
   onProgress?: (progress: number) => void

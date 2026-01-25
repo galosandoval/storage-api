@@ -4,24 +4,22 @@ import (
 	"fmt"
 	"net/http"
 
-	"storage-api/internal/database"
 	"storage-api/internal/models"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"storage-api/internal/service"
 )
 
 type HouseholdsHandler struct {
-	db *pgxpool.Pool
+	svc *service.HouseholdService
 }
 
-func NewHouseholdsHandler(db *pgxpool.Pool) *HouseholdsHandler {
-	return &HouseholdsHandler{db: db}
+func NewHouseholdsHandler(svc *service.HouseholdService) *HouseholdsHandler {
+	return &HouseholdsHandler{svc: svc}
 }
 
 // List handles GET /v1/households
 // Returns all households (for dev mode / household selection)
 func (h *HouseholdsHandler) List(w http.ResponseWriter, r *http.Request) {
-	households, err := database.ListHouseholds(r.Context(), h.db)
+	households, err := h.svc.List(r.Context())
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to list households: %v", err),

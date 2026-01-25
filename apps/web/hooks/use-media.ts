@@ -6,7 +6,7 @@ import {
   useQueryClient,
   useQuery
 } from '@tanstack/react-query'
-import { listMedia, getMedia, getThumbnailBlob } from '@/lib/media-api'
+import { listMedia, getMedia } from '@/lib/media-api'
 import type { MediaItem, MediaTypeFilter } from '@/lib/types/media'
 
 interface UseMediaOptions {
@@ -181,13 +181,3 @@ export function useMediaItem(id: string) {
   })
 }
 
-// Hook for fetching a thumbnail blob URL
-export function useThumbnail(id: string) {
-  return useQuery({
-    queryKey: ['thumbnail', id],
-    queryFn: () => getThumbnailBlob(id),
-    enabled: !!id,
-    staleTime: Infinity, // Thumbnails don't change
-    gcTime: 30 * 60 * 1000 // Keep in cache for 30 minutes
-  })
-}
