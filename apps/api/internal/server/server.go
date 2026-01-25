@@ -1,74 +1,84 @@
 package server
 
 import (
-	"context"
 	"log"
 	"net/http"
-	"time"
 
 	"storage-api/internal/config"
+	"storage-api/internal/db"
 	"storage-api/internal/handlers"
+	"storage-api/internal/repository"
+	"storage-api/internal/service"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 type Server struct {
 	config config.Config
-	db     *pgxpool.Pool
+	db     *gorm.DB
 	router *chi.Mux
 }
 
 func New(cfg config.Config) (*Server, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	db, err := pgxpool.New(ctx, cfg.DSN)
+	// Initialize GORM database
+	gormDB, err := db.New(cfg.DSN)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := db.Ping(ctx); err != nil {
-		db.Close()
 		return nil, err
 	}
 
 	s := &Server{
 		config: cfg,
-		db:     db,
+		db:     gormDB,
 		router: chi.NewRouter(),
 	}
 
-	s.routes()
+	s.setupRoutes()
 	return s, nil
 }
 
-func (s *Server) routes() {
+func (s *Server) setupRoutes() {
 	// CORS middleware - allow frontend connections
 	s.router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"}, // Configure for production
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Household-ID", "X-Dev-User"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
-	healthHandler := handlers.NewHealthHandler(s.db)
-	userHandler := handlers.NewUserHandler(s.db)
-	logsHandler := handlers.NewLogsHandler()
-	mediaHandler := handlers.NewMediaHandler(s.db)
-	householdsHandler := handlers.NewHouseholdsHandler(s.db)
+	// Initialize repositories
+	mediaRepo := repository.NewMediaRepository(s.db)
+	userRepo := repository.NewUserRepository(s.db)
+	householdRepo := repository.NewHouseholdRepository(s.db)
 
+	// Initialize services
+	mediaSvc := service.NewMediaService(mediaRepo)
+	userSvc := service.NewUserService(userRepo)
+	householdSvc := service.NewHouseholdService(householdRepo)
+
+	// Initialize handlers
+	healthHandler := handlers.NewHealthHandler(s.db)
+	userHandler := handlers.NewUserHandler(userSvc)
+	logsHandler := handlers.NewLogsHandler()
+	mediaHandler := handlers.NewMediaHandler(mediaSvc)
+	householdsHandler := handlers.NewHouseholdsHandler(householdSvc)
+
+	// Health routes
 	s.router.Get("/health", healthHandler.Health)
 	s.router.Get("/health/db", healthHandler.HealthDB)
+
+	// User routes
 	s.router.Get("/v1/me", userHandler.GetMe)
+
+	// Logs routes
 	s.router.Get("/v1/logs/stream", logsHandler.StreamLogs)
 
-	// Households endpoint (for dev mode / household selection)
+	// Households routes
 	s.router.Get("/v1/households", householdsHandler.List)
 
-	// Media endpoints
+	// Media routes
 	s.router.Post("/v1/media/upload", mediaHandler.Upload)
 	s.router.Get("/v1/media", mediaHandler.List)
 	s.router.Get("/v1/media/{id}", mediaHandler.Get)
@@ -85,7 +95,6 @@ func (s *Server) Start() error {
 
 func (s *Server) Close() {
 	if s.db != nil {
-		s.db.Close()
+		db.Close(s.db)
 	}
 }
-

@@ -4,16 +4,16 @@ import (
 	"errors"
 	"net/http"
 
-	"storage-api/internal/database"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"storage-api/internal/models"
+	"storage-api/internal/service"
 )
 
 type UserHandler struct {
-	db *pgxpool.Pool
+	svc *service.UserService
 }
 
-func NewUserHandler(db *pgxpool.Pool) *UserHandler {
-	return &UserHandler{db: db}
+func NewUserHandler(svc *service.UserService) *UserHandler {
+	return &UserHandler{svc: svc}
 }
 
 // GetMe handles the /v1/me endpoint
@@ -27,10 +27,10 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := database.GetUserByExternalSub(r.Context(), h.db, sub)
+	u, err := h.svc.GetByExternalSub(r.Context(), sub)
 	if err != nil {
 		status := http.StatusUnauthorized
-		if !errors.Is(err, database.ErrNotFound) {
+		if !errors.Is(err, models.ErrNotFound) {
 			status = http.StatusInternalServerError
 		}
 		writeJSON(w, status, map[string]any{"error": err.Error()})
@@ -39,4 +39,3 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 }
-

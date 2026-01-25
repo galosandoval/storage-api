@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"storage-api/internal/database"
 	"storage-api/internal/models"
+	"storage-api/internal/service"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/google/uuid"
 )
 
 const (
@@ -21,11 +21,11 @@ const (
 )
 
 type MediaHandler struct {
-	db *pgxpool.Pool
+	svc *service.MediaService
 }
 
-func NewMediaHandler(db *pgxpool.Pool) *MediaHandler {
-	return &MediaHandler{db: db}
+func NewMediaHandler(svc *service.MediaService) *MediaHandler {
+	return &MediaHandler{svc: svc}
 }
 
 // Upload handles POST /v1/media/upload
@@ -34,10 +34,18 @@ func NewMediaHandler(db *pgxpool.Pool) *MediaHandler {
 // - type: "photo" or "video" (optional, auto-detected from mime type)
 func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	// Get household from header (dev mode)
-	householdID := r.Header.Get("X-Household-ID")
-	if householdID == "" {
+	householdIDStr := r.Header.Get("X-Household-ID")
+	if householdIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing X-Household-ID header",
+		})
+		return
+	}
+
+	householdID, err := uuid.Parse(householdIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid X-Household-ID header",
 		})
 		return
 	}
@@ -85,7 +93,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if file already exists (by path)
-	existing, err := database.GetMediaItemByPath(r.Context(), h.db, householdID, saved.RelativePath)
+	existing, err := h.svc.GetByPath(r.Context(), householdID, saved.RelativePath)
 	if err == nil {
 		CleanupFiles(saved.FullPath, saved.PreviewFullPath) // Remove the just-saved files
 		writeJSON(w, http.StatusConflict, map[string]any{
@@ -95,7 +103,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create database record
+	// Create media item
 	item := &models.MediaItem{
 		HouseholdID:      householdID,
 		Path:             saved.RelativePath,
@@ -125,7 +133,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		item.FocalLength = meta.FocalLength
 	}
 
-	if err := database.CreateMediaItem(r.Context(), h.db, item); err != nil {
+	if err := h.svc.Create(r.Context(), item); err != nil {
 		CleanupFiles(saved.FullPath, saved.PreviewFullPath) // Clean up on failure
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to save to database: %v", err),
@@ -142,10 +150,18 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 // List handles GET /v1/media
 // Query params: page (default 1), pageSize (default 20, max 100)
 func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
-	householdID := r.Header.Get("X-Household-ID")
-	if householdID == "" {
+	householdIDStr := r.Header.Get("X-Household-ID")
+	if householdIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing X-Household-ID header",
+		})
+		return
+	}
+
+	householdID, err := uuid.Parse(householdIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid X-Household-ID header",
 		})
 		return
 	}
@@ -160,7 +176,7 @@ func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 		pageSize = 20
 	}
 
-	items, totalCount, err := database.ListMediaItems(r.Context(), h.db, householdID, page, pageSize)
+	items, totalCount, err := h.svc.List(r.Context(), householdID, page, pageSize)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to list media: %v", err),
@@ -183,17 +199,25 @@ func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 // Get handles GET /v1/media/{id}
 // Returns the media item metadata
 func (h *MediaHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing id parameter",
 		})
 		return
 	}
 
-	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid id parameter",
+		})
+		return
+	}
+
+	item, err := h.svc.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]any{
 				"error": "media item not found",
 			})
@@ -211,17 +235,25 @@ func (h *MediaHandler) Get(w http.ResponseWriter, r *http.Request) {
 // Download handles GET /v1/media/{id}/download
 // Serves the web-friendly version (JPEG preview for HEIC, original for others)
 func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing id parameter",
 		})
 		return
 	}
 
-	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid id parameter",
+		})
+		return
+	}
+
+	item, err := h.svc.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]any{
 				"error": "media item not found",
 			})
@@ -264,17 +296,25 @@ func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 // Original handles GET /v1/media/{id}/original
 // Serves the original file (HEIC, etc.) for download/archival
 func (h *MediaHandler) Original(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing id parameter",
 		})
 		return
 	}
 
-	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid id parameter",
+		})
+		return
+	}
+
+	item, err := h.svc.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]any{
 				"error": "media item not found",
 			})
@@ -313,17 +353,25 @@ func (h *MediaHandler) Original(w http.ResponseWriter, r *http.Request) {
 // Thumbnail handles GET /v1/media/{id}/thumbnail
 // Serves the thumbnail image with aggressive caching headers
 func (h *MediaHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing id parameter",
 		})
 		return
 	}
 
-	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid id parameter",
+		})
+		return
+	}
+
+	item, err := h.svc.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]any{
 				"error": "media item not found",
 			})
@@ -363,18 +411,26 @@ func (h *MediaHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
 
 // Delete handles DELETE /v1/media/{id}
 func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "missing id parameter",
 		})
 		return
 	}
 
-	// Get item first to know the file paths
-	item, err := database.GetMediaItemByID(r.Context(), h.db, id)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid id parameter",
+		})
+		return
+	}
+
+	// Get item first to know the file paths
+	item, err := h.svc.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]any{
 				"error": "media item not found",
 			})
@@ -387,7 +443,7 @@ func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete from database
-	if err := database.DeleteMediaItem(r.Context(), h.db, id); err != nil {
+	if err := h.svc.Delete(r.Context(), id); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to delete from database: %v", err),
 		})
