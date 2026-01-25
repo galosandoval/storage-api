@@ -6,6 +6,7 @@
     "dev:web": "pnpm --filter @laulo/web dev",
     "build:web": "pnpm --filter @laulo/web build",
     "lint:web": "pnpm --filter @laulo/web lint",
+    "lint:api": "cd apps/api && golangci-lint run ./...",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -21,7 +22,7 @@
       "prettier --write"
     ],
     "apps/api/**/*.go": [
-      "golangci-lint run --fix"
+      "bash -c 'cd apps/api && golangci-lint run --fix ./...'"
     ]
   }
 }

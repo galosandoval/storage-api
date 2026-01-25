@@ -1,0 +1,30 @@
+version: "2"
+
+linters:
+  default: standard
+  exclusions:
+    # Use common presets for sensible defaults
+    presets:
+      - std-error-handling
+      - common-false-positives
+    rules:
+      # Ignore errcheck for deferred Close calls (very common pattern)
+      - linters:
+          - errcheck
+        source: "defer.*Close"
+      # Ignore errcheck for cleanup operations
+      - linters:
+          - errcheck
+        source: "os\\.Remove"
+      # Ignore errcheck for process cleanup
+      - linters:
+          - errcheck
+        source: "Process\\.Kill"
+      # Ignore errcheck for cmd.Wait in cleanup
+      - linters:
+          - errcheck
+        source: "cmd\\.Wait"
+      # Ignore errcheck for websocket error messages (best-effort)
+      - linters:
+          - errcheck
+        source: "WriteMessage.*error"
