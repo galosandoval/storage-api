@@ -108,7 +108,7 @@ export default function MediaDetailPage() {
   return (
     <div className='min-h-screen bg-background'>
       {/* Header */}
-      <header className='sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
+      <header className='sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-3'>
         <div className='container flex h-14 items-center gap-4'>
           <Link href='/'>
             <Button variant='ghost' size='sm'>
@@ -131,7 +131,7 @@ export default function MediaDetailPage() {
 
       {/* Main content */}
       <main className='container py-6 mx-auto'>
-        <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
+        <div className='grid gap-6 lg:grid-cols-[1fr_320px] px-3 sm:px-0'>
           {/* Media display */}
           <div className='relative flex items-center justify-center min-h-[400px] lg:min-h-[600px] bg-muted rounded-lg overflow-hidden'>
             {isMediaLoading && (
@@ -166,7 +166,7 @@ export default function MediaDetailPage() {
           </div>
 
           {/* Metadata panel */}
-          <div className='space-y-4'>
+          <div className='space-y-3'>
             {/* Date & Time */}
             {displayDate && (
               <Card>
