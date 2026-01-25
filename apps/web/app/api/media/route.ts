@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   const params = new URLSearchParams({ page, pageSize })
   if (type) params.set('type', type)
-
+  console.log('getApiBaseUrl', getApiBaseUrl())
   try {
     const response = await fetch(`${getApiBaseUrl()}/v1/media?${params}`, {
       headers: getApiHeaders()
