@@ -244,8 +244,7 @@ func extractVideoFrame(srcPath, tempFrame string) error {
 		"-y", "-ss", "1", "-i", srcPath,
 		"-vframes", "1", "-q:v", "2", tempFrame,
 	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
+	if err := cmd.Run(); err == nil {
 		return nil
 	}
 
@@ -254,7 +253,7 @@ func extractVideoFrame(srcPath, tempFrame string) error {
 		"-y", "-i", srcPath,
 		"-vframes", "1", "-q:v", "2", tempFrame,
 	)
-	output, err = cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("ffmpeg failed: %v, output: %s", err, string(output))
 	}

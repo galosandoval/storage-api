@@ -5,7 +5,24 @@
   "scripts": {
     "dev:web": "pnpm --filter @laulo/web dev",
     "build:web": "pnpm --filter @laulo/web build",
-    "lint:web": "pnpm --filter @laulo/web lint"
+    "lint:web": "pnpm --filter @laulo/web lint",
+    "lint:api": "cd apps/api && golangci-lint run ./...",
+    "prepare": "husky"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "apps/web/**/*.{js,jsx,json,css,md}": [
+      "prettier --write"
+    ],
+    "apps/api/**/*.go": [
+      "bash -c 'cd apps/api && golangci-lint run --fix ./...'"
+    ]
+  }
 }
