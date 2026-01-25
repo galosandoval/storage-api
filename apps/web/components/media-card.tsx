@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { MoreVertical, Trash2, Play, Camera, Calendar } from 'lucide-react'
-import { useThumbnail } from '@/hooks/use-media'
 import type { MediaItem } from '@/lib/types/media'
+import { getThumbnailUrl } from '@/lib/media-api'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -38,8 +40,10 @@ function formatDate(dateString?: string): string | null {
 }
 
 export function MediaCard({ item, onDelete }: MediaCardProps) {
-  const { data: thumbnailUrl, isLoading, isError } = useThumbnail(item.id)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
 
+  const thumbnailUrl = getThumbnailUrl(item.id)
   const displayDate = formatDate(item.takenAt) || formatDate(item.createdAt)
   const cameraInfo = item.cameraModel || item.cameraMake
 
@@ -50,7 +54,7 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
         href={`/media/${item.id}`}
         className='absolute inset-0 w-full h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       >
-        {isLoading && (
+        {isLoading && !isError && (
           <div className='absolute inset-0 flex items-center justify-center'>
             <div className='size-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent' />
           </div>
@@ -62,15 +66,21 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
           </div>
         )}
 
-        {thumbnailUrl && !isError && (
-          <img
+        {!isError && (
+          <Image
             src={thumbnailUrl}
             alt=''
+            fill
             className={cn(
-              'absolute inset-0 w-full h-full object-cover transition-transform duration-200',
+              'object-cover transition-transform duration-200',
               'group-hover:scale-105'
             )}
-            loading='lazy'
+            sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false)
+              setIsError(true)
+            }}
           />
         )}
 
@@ -92,7 +102,7 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
 
         {/* Metadata overlay on hover */}
         {!isLoading && !isError && (displayDate || cameraInfo) && (
-          <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+          <div className='absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
             <div className='flex items-center gap-2 text-xs text-white/90'>
               {displayDate && (
                 <span className='flex items-center gap-1'>

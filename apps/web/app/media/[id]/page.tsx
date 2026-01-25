@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -17,7 +18,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { useMediaItem } from '@/hooks/use-media'
-import { getMediaUrl, getMediaBlob } from '@/lib/media-api'
+import { getMediaUrl } from '@/lib/media-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -71,43 +72,9 @@ export default function MediaDetailPage() {
   const params = useParams()
   const id = params.id as string
   const { data: item, isLoading, error } = useMediaItem(id)
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null)
   const [isMediaLoading, setIsMediaLoading] = useState(true)
 
-  // Load full-size media
-  useEffect(() => {
-    if (!id) return
-    let cancelled = false
-
-    async function loadMedia() {
-      try {
-        setIsMediaLoading(true)
-        const url = await getMediaBlob(id)
-        if (!cancelled) {
-          setMediaUrl(url)
-        }
-      } catch {
-        // Fall back to direct URL
-        if (!cancelled) {
-          setMediaUrl(getMediaUrl(id))
-        }
-      } finally {
-        if (!cancelled) {
-          setIsMediaLoading(false)
-        }
-      }
-    }
-
-    loadMedia()
-
-    return () => {
-      cancelled = true
-      if (mediaUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(mediaUrl)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  const mediaUrl = getMediaUrl(id)
 
   if (isLoading) {
     return (
@@ -163,7 +130,7 @@ export default function MediaDetailPage() {
       </header>
 
       {/* Main content */}
-      <main className='container py-6'>
+      <main className='container py-6 mx-auto'>
         <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
           {/* Media display */}
           <div className='relative flex items-center justify-center min-h-[400px] lg:min-h-[600px] bg-muted rounded-lg overflow-hidden'>
@@ -173,16 +140,19 @@ export default function MediaDetailPage() {
               </div>
             )}
 
-            {mediaUrl && item.type === 'photo' && (
-              <img
+            {item.type === 'photo' && (
+              <Image
                 src={mediaUrl}
                 alt={item.originalFilename || 'Photo'}
-                className='max-w-full max-h-[80vh] object-contain'
+                width={item.width || 1920}
+                height={item.height || 1080}
+                className='max-w-full max-h-[80vh] w-auto h-auto object-contain'
                 onLoad={() => setIsMediaLoading(false)}
+                priority
               />
             )}
 
-            {mediaUrl && item.type === 'video' && (
+            {item.type === 'video' && (
               <video
                 src={mediaUrl}
                 controls
