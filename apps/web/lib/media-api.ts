@@ -54,6 +54,7 @@ export function getThumbnailUrl(id: string): string {
 
 export interface UploadOptions {
   file: File
+  isPrivate?: boolean
   onProgress?: (progress: number) => void
 }
 
@@ -78,12 +79,16 @@ export type UploadOutcome = UploadResult | UploadConflict | UploadError
 
 export function uploadMedia({
   file,
+  isPrivate = false,
   onProgress
 }: UploadOptions): Promise<UploadOutcome> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
     const formData = new FormData()
     formData.append('file', file)
+    if (isPrivate) {
+      formData.append('is_private', 'true')
+    }
 
     xhr.upload.addEventListener('progress', (event) => {
       if (event.lengthComputable && onProgress) {
