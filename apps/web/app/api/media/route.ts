@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
 
   const params = new URLSearchParams({ page, pageSize })
   if (type) params.set('type', type)
-  console.log('getApiBaseUrl', getApiBaseUrl())
+
   try {
-    const response = await fetch(`${getApiBaseUrl()}/v1/media?${params}`, {
+    const response = await fetch(`${getApiBaseUrl()}/media?${params}`, {
       headers: getApiHeaders()
     })
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
-    const response = await fetch(`${getApiBaseUrl()}/v1/media/upload`, {
+    const response = await fetch(`${getApiBaseUrl()}/media/upload`, {
       method: 'POST',
       headers: getApiHeaders(),
       body: formData

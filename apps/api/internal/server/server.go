@@ -70,22 +70,22 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/health/db", healthHandler.HealthDB)
 
 	// User routes
-	s.router.Get("/v1/me", userHandler.GetMe)
+	s.router.Get("/me", userHandler.GetMe)
 
 	// Logs routes
-	s.router.Get("/v1/logs/stream", logsHandler.StreamLogs)
+	s.router.Get("/logs/stream", logsHandler.StreamLogs)
 
 	// Households routes
-	s.router.Get("/v1/households", householdsHandler.List)
+	s.router.Get("/households", householdsHandler.List)
 
 	// Media routes
-	s.router.Post("/v1/media/upload", mediaHandler.Upload)
-	s.router.Get("/v1/media", mediaHandler.List)
-	s.router.Get("/v1/media/{id}", mediaHandler.Get)
-	s.router.Get("/v1/media/{id}/download", mediaHandler.Download)
-	s.router.Get("/v1/media/{id}/thumbnail", mediaHandler.Thumbnail)
-	s.router.Get("/v1/media/{id}/original", mediaHandler.Original)
-	s.router.Delete("/v1/media/{id}", mediaHandler.Delete)
+	s.router.Post("/media/upload", mediaHandler.Upload)
+	s.router.Get("/media", mediaHandler.List)
+	s.router.Get("/media/{id}", mediaHandler.Get)
+	s.router.Get("/media/{id}/download", mediaHandler.Download)
+	s.router.Get("/media/{id}/thumbnail", mediaHandler.Thumbnail)
+	s.router.Get("/media/{id}/original", mediaHandler.Original)
+	s.router.Delete("/media/{id}", mediaHandler.Delete)
 }
 
 func (s *Server) Start() error {

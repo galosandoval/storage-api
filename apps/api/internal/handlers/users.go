@@ -16,7 +16,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{svc: svc}
 }
 
-// GetMe handles the /v1/me endpoint
+// GetMe handles the /me endpoint
 // Dev auth: provide X-Dev-User header as external_sub (temporary)
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	sub := r.Header.Get("X-Dev-User")

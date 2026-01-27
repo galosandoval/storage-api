@@ -91,7 +91,7 @@ func parseHouseholdID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) 
 	return householdID, true
 }
 
-// Upload handles POST /v1/media/upload
+// Upload handles POST /media/upload
 func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	householdID, ok := parseHouseholdID(w, r)
 	if !ok {
@@ -198,7 +198,7 @@ func populateItemMetadata(item *models.MediaItem, meta *ImageMetadata) {
 	item.FocalLength = meta.FocalLength
 }
 
-// List handles GET /v1/media
+// List handles GET /media
 func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 	householdID, ok := parseHouseholdID(w, r)
 	if !ok {
@@ -235,7 +235,7 @@ func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Get handles GET /v1/media/{id}
+// Get handles GET /media/{id}
 func (h *MediaHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
@@ -250,7 +250,7 @@ func (h *MediaHandler) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"item": item})
 }
 
-// Download handles GET /v1/media/{id}/download
+// Download handles GET /media/{id}/download
 func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
@@ -286,7 +286,7 @@ func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fullPath)
 }
 
-// Original handles GET /v1/media/{id}/original
+// Original handles GET /media/{id}/original
 func (h *MediaHandler) Original(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
@@ -316,7 +316,7 @@ func (h *MediaHandler) Original(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fullPath)
 }
 
-// Thumbnail handles GET /v1/media/{id}/thumbnail
+// Thumbnail handles GET /media/{id}/thumbnail
 func (h *MediaHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
@@ -349,7 +349,7 @@ func (h *MediaHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fullPath)
 }
 
-// Delete handles DELETE /v1/media/{id}
+// Delete handles DELETE /media/{id}
 func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
