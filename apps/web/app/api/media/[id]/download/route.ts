@@ -5,37 +5,34 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// GET /api/media/[id]/download - Stream media file
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+// GET /api/media/[id]/download - Download media file
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/v1/media/${id}/download`, {
+    const response = await fetch(`${getApiBaseUrl()}/media/${id}/download`, {
       headers: getApiHeaders()
     })
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Media not found' },
-        { status: response.status }
-      )
+      const data = await response.json()
+      return NextResponse.json(data, { status: response.status })
     }
 
-    const contentType =
-      response.headers.get('content-type') ?? 'application/octet-stream'
-    const contentLength = response.headers.get('content-length')
-
-    const headers = new Headers({
-      'Content-Type': contentType
+    // Stream the file response
+    const headers = new Headers()
+    response.headers.forEach((value, key) => {
+      if (
+        key.toLowerCase() === 'content-type' ||
+        key.toLowerCase() === 'content-disposition' ||
+        key.toLowerCase() === 'content-length'
+      ) {
+        headers.set(key, value)
+      }
     })
 
-    if (contentLength) {
-      headers.set('Content-Length', contentLength)
-    }
-
-    // Stream the response body
     return new NextResponse(response.body, {
-      status: 200,
+      status: response.status,
       headers
     })
   } catch (error) {

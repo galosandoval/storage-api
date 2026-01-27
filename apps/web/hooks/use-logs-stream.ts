@@ -40,7 +40,7 @@ function getLogsWsUrl(params: URLSearchParams): string | null {
   }
 
   const port = process.env.NEXT_PUBLIC_PI_PORT || '8080'
-  return `ws://${host}:${port}/v1/logs/stream?${params}`
+  return `ws://${host}:${port}/logs/stream?${params}`
 }
 
 export function useLogsStream(
@@ -72,7 +72,6 @@ export function useLogsStream(
         'WebSocket URL not configured. Set NEXT_PUBLIC_PI_HOST in .env and restart the dev server.',
         { NEXT_PUBLIC_PI_HOST: process.env.NEXT_PUBLIC_PI_HOST }
       )
-      // Avoid calling setState() synchronously; use microtask to defer setError
       setErrorEvent('Set NEXT_PUBLIC_PI_HOST in .env and restart dev server')
       return
     }

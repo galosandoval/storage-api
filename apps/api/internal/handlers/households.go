@@ -16,7 +16,7 @@ func NewHouseholdsHandler(svc *service.HouseholdService) *HouseholdsHandler {
 	return &HouseholdsHandler{svc: svc}
 }
 
-// List handles GET /v1/households
+// List handles GET /households
 // Returns all households (for dev mode / household selection)
 func (h *HouseholdsHandler) List(w http.ResponseWriter, r *http.Request) {
 	households, err := h.svc.List(r.Context())

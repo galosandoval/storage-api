@@ -5,49 +5,34 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// GET /api/media/[id]/thumbnail - Stream thumbnail image with caching
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+// GET /api/media/[id]/thumbnail - Get media thumbnail
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    const response = await fetch(
-      `${getApiBaseUrl()}/v1/media/${id}/thumbnail`,
-      {
-        headers: getApiHeaders()
-      }
-    )
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Thumbnail not found' },
-        { status: response.status }
-      )
-    }
-
-    const contentType =
-      response.headers.get('content-type') ?? 'image/jpeg'
-    const contentLength = response.headers.get('content-length')
-    const cacheControl = response.headers.get('cache-control')
-
-    const headers = new Headers({
-      'Content-Type': contentType
+    const response = await fetch(`${getApiBaseUrl()}/media/${id}/thumbnail`, {
+      headers: getApiHeaders()
     })
 
-    if (contentLength) {
-      headers.set('Content-Length', contentLength)
+    if (!response.ok) {
+      const data = await response.json()
+      return NextResponse.json(data, { status: response.status })
     }
 
-    // Forward caching headers from backend
-    if (cacheControl) {
-      headers.set('Cache-Control', cacheControl)
-    } else {
-      // Default to aggressive caching for thumbnails
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable')
-    }
+    // Stream the image response
+    const headers = new Headers()
+    response.headers.forEach((value, key) => {
+      if (
+        key.toLowerCase() === 'content-type' ||
+        key.toLowerCase() === 'content-length' ||
+        key.toLowerCase() === 'cache-control'
+      ) {
+        headers.set(key, value)
+      }
+    })
 
-    // Stream the response body
     return new NextResponse(response.body, {
-      status: 200,
+      status: response.status,
       headers
     })
   } catch (error) {

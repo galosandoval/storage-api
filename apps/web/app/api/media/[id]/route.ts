@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/v1/media/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/media/${id}`, {
       headers: getApiHeaders()
     })
 
@@ -30,7 +30,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/v1/media/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/media/${id}`, {
       method: 'DELETE',
       headers: getApiHeaders()
     })
