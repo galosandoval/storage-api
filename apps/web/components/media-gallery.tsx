@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useQueryState } from 'nuqs'
 import { RefreshCw } from 'lucide-react'
 import { useMedia } from '@/hooks/use-media'
-import type { MediaItem, MediaTypeFilter, VisibilityFilter as VisibilityFilterType } from '@/lib/types/media'
+import type { MediaItem } from '@/lib/types/media'
+import { typeFilterParser, visibilityFilterParser } from '@/lib/search-params'
 import { Button } from '@/components/ui/button'
 import { MediaGrid } from '@/components/media-grid'
 import { UploadDropzone } from '@/components/upload-dropzone'
@@ -12,8 +14,8 @@ import { VisibilityFilter } from '@/components/visibility-filter'
 import { DeleteDialog } from '@/components/delete-dialog'
 
 export function MediaGallery() {
-  const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>('all')
-  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilterType>('all')
+  const [typeFilter, setTypeFilter] = useQueryState('type', typeFilterParser)
+  const [visibilityFilter, setVisibilityFilter] = useQueryState('visibility', visibilityFilterParser)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
 
   const {
