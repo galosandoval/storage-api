@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { UserButton } from '@clerk/nextjs'
 import {
   ArrowLeft,
   Calendar,
@@ -90,6 +91,7 @@ function MediaHeader({ id, filename }: { id: string; filename?: string }) {
             Download
           </Button>
         </a>
+        <UserButton />
       </div>
     </header>
   )

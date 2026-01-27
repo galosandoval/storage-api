@@ -49,20 +49,17 @@ export function MediaGallery() {
 
   return (
     <div className='w-full max-w-6xl mx-auto space-y-6'>
-      {/* Header */}
-      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-        <h1 className='text-2xl font-semibold tracking-tight'>Media Gallery</h1>
-        <div className='flex items-center gap-2'>
-          <TypeFilter value={typeFilter} onChange={setTypeFilter} />
-          <Button
-            variant='outline'
-            size='icon'
-            onClick={refresh}
-            title='Refresh'
-          >
-            <RefreshCw className='size-4' />
-          </Button>
-        </div>
+      {/* Controls */}
+      <div className='flex items-center justify-end gap-2'>
+        <TypeFilter value={typeFilter} onChange={setTypeFilter} />
+        <Button
+          variant='outline'
+          size='icon'
+          onClick={refresh}
+          title='Refresh'
+        >
+          <RefreshCw className='size-4' />
+        </Button>
       </div>
 
       {/* Upload dropzone */}
