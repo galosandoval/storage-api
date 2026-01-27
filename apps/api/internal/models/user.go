@@ -11,6 +11,9 @@ type User struct {
 	HouseholdID uuid.UUID `gorm:"type:uuid;not null;index" json:"householdId"`
 	ExternalSub string    `gorm:"size:255;not null;uniqueIndex" json:"externalSub"`
 	Email       string    `gorm:"size:255" json:"email,omitempty"`
+	FirstName   string    `gorm:"size:255" json:"firstName,omitempty"`
+	LastName    string    `gorm:"size:255" json:"lastName,omitempty"`
+	ImageURL    string    `gorm:"size:500" json:"imageUrl,omitempty"`
 	Role        string    `gorm:"size:50;not null" json:"role"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"createdAt"`
 }

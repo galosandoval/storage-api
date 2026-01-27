@@ -3,14 +3,16 @@ package config
 import "os"
 
 type Config struct {
-	Addr string
-	DSN  string
+	Addr           string
+	DSN            string
+	ClerkSecretKey string
 }
 
 func Load() Config {
 	return Config{
-		Addr: getenv("ADDR", ":8080"),
-		DSN:  getenv("DATABASE_URL", ""),
+		Addr:           getenv("ADDR", ":8080"),
+		DSN:            getenv("DATABASE_URL", ""),
+		ClerkSecretKey: getenv("CLERK_SECRET_KEY", ""),
 	}
 }
 

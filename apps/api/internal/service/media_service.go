@@ -34,16 +34,16 @@ func (s *MediaService) GetByPath(ctx context.Context, householdID uuid.UUID, pat
 	return s.repo.GetByPath(ctx, householdID, path)
 }
 
-// List retrieves paginated media items for a household
-func (s *MediaService) List(ctx context.Context, householdID uuid.UUID, page, pageSize int) ([]models.MediaItem, int64, error) {
+// List retrieves paginated media items for a household with visibility filtering
+func (s *MediaService) List(ctx context.Context, filter repository.MediaListFilter) ([]models.MediaItem, int64, error) {
 	// Apply defaults and limits
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	if filter.PageSize < 1 || filter.PageSize > 100 {
+		filter.PageSize = 20
 	}
-	if page < 1 {
-		page = 1
+	if filter.Page < 1 {
+		filter.Page = 1
 	}
-	return s.repo.List(ctx, householdID, page, pageSize)
+	return s.repo.List(ctx, filter)
 }
 
 // Delete removes a media item by ID

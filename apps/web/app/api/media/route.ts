@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(`${getApiBaseUrl()}/media?${params}`, {
-      headers: getApiHeaders()
+      headers: await getApiHeaders()
     })
 
     const data = await response.json()
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(`${getApiBaseUrl()}/media/upload`, {
       method: 'POST',
-      headers: getApiHeaders(),
+      headers: await getApiHeaders(),
       body: formData
     })
 

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   try {
     const response = await fetch(`${getApiBaseUrl()}/media/${id}/download`, {
-      headers: getApiHeaders()
+      headers: await getApiHeaders()
     })
 
     if (!response.ok) {
