@@ -296,6 +296,124 @@ sudo journalctl -u tailscaled -f
 | Free Tier | 100 devices | Limited |
 | GitHub Actions Support | Native | Workarounds needed |
 
+## Tailscale Funnel (Exposing API to the Internet)
+
+Tailscale Funnel allows external services (like Vercel) to reach your Pi's API without exposing ports or having a public IP.
+
+### How It Works
+
+```
+Internet (Vercel, browsers, etc.)
+        │
+        ▼
+Tailscale's Edge Servers
+(storage-pi.tail90a005.ts.net)
+        │
+        ▼ Encrypted tunnel
+        │
+Your Pi (localhost:8080)
+```
+
+Tailscale's servers act as a public-facing proxy. They handle DNS and TLS certificates, then forward traffic through an encrypted tunnel to your Pi.
+
+### Enable Funnel
+
+1. **Enable Funnel in Tailscale Admin Console**
+
+   Go to https://login.tailscale.com/admin/dns and scroll to **HTTPS Certificates**. Enable **Funnel**.
+
+2. **Start Funnel on Your Pi**
+
+   ```bash
+   tailscale funnel 8080
+   ```
+
+   You'll see output like:
+   ```
+   https://storage-pi.tail90a005.ts.net/
+   |-- proxy http://127.0.0.1:8080
+   ```
+
+3. **Test It**
+
+   From any device (doesn't need to be on Tailscale):
+   ```bash
+   curl https://storage-pi.tail90a005.ts.net/health
+   ```
+
+### Make Funnel Persistent
+
+Funnel stops when the terminal closes. To make it persistent:
+
+**Option 1: Background flag**
+```bash
+tailscale funnel --bg 8080
+```
+
+**Option 2: Systemd service (recommended)**
+
+```bash
+sudo tee /etc/systemd/system/tailscale-funnel.service > /dev/null <<EOF
+[Unit]
+Description=Tailscale Funnel
+After=tailscaled.service
+Requires=tailscaled.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tailscale funnel 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable tailscale-funnel
+sudo systemctl start tailscale-funnel
+```
+
+Check status:
+```bash
+sudo systemctl status tailscale-funnel
+tailscale funnel status
+```
+
+### Vercel Environment Variables
+
+Set these in your Vercel project settings:
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `PI_API_URL` | `https://storage-pi.tail90a005.ts.net` | Server-side API proxy |
+| `NEXT_PUBLIC_PI_HOST` | `storage-pi.tail90a005.ts.net` | Client-side WebSocket (logs) |
+
+### Troubleshooting Funnel
+
+**Funnel not running:**
+```bash
+tailscale funnel status
+# Should show the proxy config, not "No serve config"
+```
+
+**DNS not resolving:**
+```bash
+nslookup storage-pi.tail90a005.ts.net
+# Should return Tailscale's edge server IPs
+```
+
+**Connection refused:**
+```bash
+# Check if API is running locally
+curl http://localhost:8080/health
+
+# Check if Funnel is configured
+tailscale funnel status
+```
+
+---
+
 ## Next Steps
 
 - Consider setting up [Tailscale SSH](https://tailscale.com/kb/1193/tailscale-ssh) for even simpler key management
