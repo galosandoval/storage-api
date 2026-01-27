@@ -31,7 +31,7 @@ interface UseLogsStreamReturn {
 
 /**
  * Get WebSocket URL for logs stream.
- * Uses NEXT_PUBLIC_PI_WS_URL or constructs from NEXT_PUBLIC_PI_HOST + NEXT_PUBLIC_PI_PORT
+ * Uses wss:// for production (Tailscale Funnel) and ws:// for local development.
  */
 function getLogsWsUrl(params: URLSearchParams): string | null {
   const host = process.env.NEXT_PUBLIC_PI_HOST
@@ -39,8 +39,15 @@ function getLogsWsUrl(params: URLSearchParams): string | null {
     return null
   }
 
-  const port = process.env.NEXT_PUBLIC_PI_PORT || '8080'
-  return `ws://${host}:${port}/logs/stream?${params}`
+  // Use secure WebSocket for non-localhost hosts (production via Tailscale Funnel)
+  const isLocalhost = host === 'localhost' || host === '127.0.0.1'
+  if (isLocalhost) {
+    const port = process.env.NEXT_PUBLIC_PI_PORT || '8080'
+    return `ws://${host}:${port}/logs/stream?${params}`
+  }
+
+  // Production: use wss:// without port (Tailscale Funnel handles TLS termination)
+  return `wss://${host}/logs/stream?${params}`
 }
 
 export function useLogsStream(
