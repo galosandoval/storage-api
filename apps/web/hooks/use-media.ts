@@ -7,11 +7,16 @@ import {
   useQuery
 } from '@tanstack/react-query'
 import { listMedia, getMedia } from '@/lib/media-api'
-import type { MediaItem, MediaTypeFilter } from '@/lib/types/media'
+import type {
+  MediaItem,
+  MediaTypeFilter,
+  VisibilityFilter
+} from '@/lib/types/media'
 
 interface UseMediaOptions {
   pageSize?: number
   typeFilter?: MediaTypeFilter
+  visibilityFilter?: VisibilityFilter
 }
 
 interface UseMediaReturn {
@@ -28,7 +33,7 @@ interface UseMediaReturn {
 }
 
 export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
-  const { pageSize = 20, typeFilter = 'all' } = options
+  const { pageSize = 20, typeFilter = 'all', visibilityFilter = 'all' } = options
   const queryClient = useQueryClient()
 
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -43,9 +48,9 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
     fetchNextPage,
     refetch
   } = useInfiniteQuery({
-    queryKey: ['media', typeFilter, pageSize],
+    queryKey: ['media', typeFilter, visibilityFilter, pageSize],
     queryFn: async ({ pageParam = 1 }) => {
-      return listMedia(pageParam, pageSize, typeFilter)
+      return listMedia(pageParam, pageSize, typeFilter, visibilityFilter)
     },
     getNextPageParam: (lastPage) => {
       const hasMore = lastPage.page * lastPage.pageSize < lastPage.totalCount
@@ -73,7 +78,7 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
   const prependItem = useCallback(
     (item: MediaItem) => {
       queryClient.setQueryData(
-        ['media', typeFilter, pageSize],
+        ['media', typeFilter, visibilityFilter, pageSize],
         (oldData: typeof data) => {
           if (!oldData) return oldData
           return {
@@ -92,14 +97,14 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
         }
       )
     },
-    [queryClient, typeFilter, pageSize]
+    [queryClient, typeFilter, visibilityFilter, pageSize]
   )
 
   // Remove an item (after delete) - optimistic update
   const removeItem = useCallback(
     (id: string) => {
       queryClient.setQueryData(
-        ['media', typeFilter, pageSize],
+        ['media', typeFilter, visibilityFilter, pageSize],
         (oldData: typeof data) => {
           if (!oldData) return oldData
           return {
@@ -113,7 +118,7 @@ export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
         }
       )
     },
-    [queryClient, typeFilter, pageSize]
+    [queryClient, typeFilter, visibilityFilter, pageSize]
   )
 
   // Sentinel ref callback for IntersectionObserver

@@ -1,6 +1,8 @@
 export interface MediaItem {
   id: string
   householdId: string
+  uploaderId?: string
+  isPrivate: boolean
   path: string
   type: 'photo' | 'video'
   mimeType?: string
@@ -52,3 +54,5 @@ export interface ErrorResponse {
 }
 
 export type MediaTypeFilter = 'all' | 'photo' | 'video'
+
+export type VisibilityFilter = 'all' | 'mine' | 'public'

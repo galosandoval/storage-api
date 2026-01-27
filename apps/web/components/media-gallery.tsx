@@ -3,15 +3,17 @@
 import { useState, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useMedia } from '@/hooks/use-media'
-import type { MediaItem, MediaTypeFilter } from '@/lib/types/media'
+import type { MediaItem, MediaTypeFilter, VisibilityFilter as VisibilityFilterType } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
 import { MediaGrid } from '@/components/media-grid'
 import { UploadDropzone } from '@/components/upload-dropzone'
 import { TypeFilter } from '@/components/type-filter'
+import { VisibilityFilter } from '@/components/visibility-filter'
 import { DeleteDialog } from '@/components/delete-dialog'
 
 export function MediaGallery() {
   const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>('all')
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilterType>('all')
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
 
   const {
@@ -24,7 +26,7 @@ export function MediaGallery() {
     prependItem,
     removeItem,
     sentinelRef
-  } = useMedia({ typeFilter })
+  } = useMedia({ typeFilter, visibilityFilter })
 
   const handleItemDelete = useCallback((item: MediaItem) => {
     setDeleteItem(item)
@@ -32,12 +34,17 @@ export function MediaGallery() {
 
   const handleUploadComplete = useCallback(
     (item: MediaItem) => {
-      // Only prepend if it matches the current filter
-      if (typeFilter === 'all' || typeFilter === item.type) {
+      // Only prepend if it matches the current filters
+      const matchesType = typeFilter === 'all' || typeFilter === item.type
+      const matchesVisibility =
+        visibilityFilter === 'all' ||
+        visibilityFilter === 'mine' ||
+        (visibilityFilter === 'public' && !item.isPrivate)
+      if (matchesType && matchesVisibility) {
         prependItem(item)
       }
     },
-    [typeFilter, prependItem]
+    [typeFilter, visibilityFilter, prependItem]
   )
 
   const handleDeleted = useCallback(
@@ -50,7 +57,8 @@ export function MediaGallery() {
   return (
     <div className='w-full max-w-6xl mx-auto space-y-6'>
       {/* Controls */}
-      <div className='flex items-center justify-end gap-2'>
+      <div className='flex flex-wrap items-center justify-end gap-2'>
+        <VisibilityFilter value={visibilityFilter} onChange={setVisibilityFilter} />
         <TypeFilter value={typeFilter} onChange={setTypeFilter} />
         <Button
           variant='outline'
