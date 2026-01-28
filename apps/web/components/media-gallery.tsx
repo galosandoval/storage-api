@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useQueryState } from 'nuqs'
 import { RefreshCw } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import { useMedia } from '@/hooks/use-media'
 import type { MediaItem } from '@/lib/types/media'
 import { typeFilterParser, visibilityFilterParser } from '@/lib/search-params'
@@ -14,6 +15,7 @@ import { VisibilityFilter } from '@/components/visibility-filter'
 import { DeleteDialog } from '@/components/delete-dialog'
 
 export function MediaGallery() {
+  const { t } = useTranslation('common')
   const [typeFilter, setTypeFilter] = useQueryState('type', typeFilterParser)
   const [visibilityFilter, setVisibilityFilter] = useQueryState('visibility', visibilityFilterParser)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
@@ -65,7 +67,7 @@ export function MediaGallery() {
           variant='outline'
           size='icon'
           onClick={refresh}
-          title='Refresh'
+          title={t('refresh')}
         >
           <RefreshCw className='size-4' />
         </Button>

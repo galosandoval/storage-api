@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { Upload, X, AlertCircle } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import { useMediaUpload } from '@/hooks/use-media-upload'
 import type { MediaItem } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ interface UploadDropzoneProps {
 }
 
 export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
+  const { t } = useTranslation('upload')
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const { isUploading, progress, error, upload, reset } = useMediaUpload()
@@ -102,10 +104,10 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         <Upload className='size-10 text-muted-foreground' />
         <div className='text-center'>
           <p className='font-medium'>
-            {isDragging ? 'Drop files here' : 'Drop files or click to upload'}
+            {isDragging ? t('dropHere') : t('dropOrClick')}
           </p>
           <p className='text-sm text-muted-foreground mt-1'>
-            Photos and videos up to 100MB
+            {t('sizeLimit')}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import type { MediaItem } from '@/lib/types/media'
 import { MediaCard } from '@/components/media-card'
 
@@ -21,6 +22,7 @@ export function MediaGrid({
   onItemDelete,
   sentinelRef
 }: MediaGridProps) {
+  const { t } = useTranslation('media')
   if (isLoading) {
     return (
       <div className='flex items-center justify-center py-20'>
@@ -32,10 +34,8 @@ export function MediaGrid({
   if (items.length === 0) {
     return (
       <div className='flex flex-col items-center justify-center py-20 text-muted-foreground'>
-        <p className='text-lg'>No media found</p>
-        <p className='text-sm mt-1'>
-          Upload some photos or videos to get started
-        </p>
+        <p className='text-lg'>{t('noMediaFound')}</p>
+        <p className='text-sm mt-1'>{t('uploadToStart')}</p>
       </div>
     )
   }

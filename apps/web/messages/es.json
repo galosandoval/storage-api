@@ -1,0 +1,43 @@
+{
+  "common": {
+    "signOut": "Cerrar sesión",
+    "refresh": "Actualizar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "loading": "Cargando...",
+    "failedToLoad": "Error al cargar"
+  },
+  "header": {
+    "title": "Laulo Media"
+  },
+  "upload": {
+    "dropHere": "Suelta los archivos aquí",
+    "dropOrClick": "Suelta archivos o haz clic para subir",
+    "sizeLimit": "Fotos y videos hasta 100MB"
+  },
+  "filters": {
+    "all": "Todo",
+    "photos": "Fotos",
+    "videos": "Videos",
+    "mine": "Míos",
+    "showAll": "Mostrar todo",
+    "showPhotos": "Mostrar fotos",
+    "showVideos": "Mostrar videos",
+    "showMine": "Mostrar mis subidas"
+  },
+  "media": {
+    "noMediaFound": "No se encontraron medios",
+    "uploadToStart": "Sube fotos o videos para comenzar"
+  },
+  "deleteDialog": {
+    "deletePhoto": "¿Eliminar foto?",
+    "deleteVideo": "¿Eliminar video?",
+    "photoWarning": "Esta acción no se puede deshacer. Esto eliminará permanentemente esta foto de tu almacenamiento.",
+    "videoWarning": "Esta acción no se puede deshacer. Esto eliminará permanentemente este video de tu almacenamiento."
+  },
+  "language": {
+    "english": "Inglés",
+    "spanish": "Español",
+    "switchLanguage": "Cambiar idioma"
+  }
+}
