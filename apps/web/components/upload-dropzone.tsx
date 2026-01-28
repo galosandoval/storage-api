@@ -1,12 +1,11 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { Upload, X, AlertCircle, Lock, Globe } from 'lucide-react'
+import { Upload, X, AlertCircle } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/use-media-upload'
 import type { MediaItem } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
 interface UploadDropzoneProps {
@@ -16,7 +15,6 @@ interface UploadDropzoneProps {
 export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [isPrivate, setIsPrivate] = useState(false)
   const { isUploading, progress, error, upload, reset } = useMediaUpload()
 
   const handleFiles = useCallback(
@@ -25,13 +23,13 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
 
       // Process files one at a time
       for (const file of Array.from(files)) {
-        const item = await upload({ file, isPrivate })
+        const item = await upload({ file })
         if (item) {
           onUploadComplete(item)
         }
       }
     },
-    [upload, onUploadComplete, isPrivate]
+    [upload, onUploadComplete]
   )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -71,31 +69,6 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
 
   return (
     <div className='space-y-3'>
-      {/* Privacy toggle */}
-      <div className='flex items-center justify-between px-1'>
-        <div className='flex items-center gap-2 text-sm'>
-          {isPrivate ? (
-            <>
-              <Lock className='size-4 text-muted-foreground' />
-              <span className='text-muted-foreground'>Private</span>
-            </>
-          ) : (
-            <>
-              <Globe className='size-4 text-muted-foreground' />
-              <span className='text-muted-foreground'>Visible to household</span>
-            </>
-          )}
-        </div>
-        <div className='flex items-center gap-2'>
-          <span className='text-xs text-muted-foreground'>Private</span>
-          <Switch
-            checked={isPrivate}
-            onCheckedChange={setIsPrivate}
-            disabled={isUploading}
-          />
-        </div>
-      </div>
-
       <div
         role='button'
         tabIndex={0}

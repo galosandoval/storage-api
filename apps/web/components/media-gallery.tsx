@@ -38,10 +38,9 @@ export function MediaGallery() {
     (item: MediaItem) => {
       // Only prepend if it matches the current filters
       const matchesType = typeFilter === 'all' || typeFilter === item.type
+      // For 'all' or 'mine', always show newly uploaded items (they're the current user's)
       const matchesVisibility =
-        visibilityFilter === 'all' ||
-        visibilityFilter === 'mine' ||
-        (visibilityFilter === 'public' && !item.isPrivate)
+        visibilityFilter === 'all' || visibilityFilter === 'mine'
       if (matchesType && matchesVisibility) {
         prependItem(item)
       }

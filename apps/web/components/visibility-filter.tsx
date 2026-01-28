@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Lock, User } from 'lucide-react'
+import { Globe, User } from 'lucide-react'
 import type { VisibilityFilter } from '@/lib/types/media'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
@@ -28,10 +28,6 @@ export function VisibilityFilter({ value, onChange }: VisibilityFilterProps) {
       <ToggleGroupItem value='mine' aria-label='Show my uploads'>
         <User className='size-4 mr-2' />
         Mine
-      </ToggleGroupItem>
-      <ToggleGroupItem value='public' aria-label='Show public only'>
-        <Lock className='size-4 mr-2' />
-        Public
       </ToggleGroupItem>
     </ToggleGroup>
   )

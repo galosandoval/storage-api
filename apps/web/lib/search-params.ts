@@ -8,6 +8,5 @@ export const typeFilterParser = parseAsStringLiteral([
 
 export const visibilityFilterParser = parseAsStringLiteral([
   'all',
-  'mine',
-  'public'
+  'mine'
 ] as const).withDefault('all')
