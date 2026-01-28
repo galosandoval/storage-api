@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"github.com/disintegration/imaging"
+
+	// Register webp decoder for thumbnail generation
+	_ "golang.org/x/image/webp"
 )
 
 // ThumbnailSize is the maximum dimension for generated thumbnails
