@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import { deleteMedia } from '@/lib/media-api'
 import type { MediaItem } from '@/lib/types/media'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ export function DeleteDialog({
   onClose,
   onDeleted
 }: DeleteDialogProps) {
+  const { t } = useTranslation()
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,11 +59,14 @@ export function DeleteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Delete {item?.type === 'video' ? 'video' : 'photo'}?
+            {item?.type === 'video'
+              ? t('deleteDialog.deleteVideo')
+              : t('deleteDialog.deletePhoto')}
           </DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete this{' '}
-            {item?.type === 'video' ? 'video' : 'photo'} from your storage.
+            {item?.type === 'video'
+              ? t('deleteDialog.videoWarning')
+              : t('deleteDialog.photoWarning')}
           </DialogDescription>
         </DialogHeader>
 
@@ -73,7 +78,7 @@ export function DeleteDialog({
 
         <DialogFooter>
           <Button variant='outline' onClick={onClose} disabled={isDeleting}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant='destructive'
@@ -81,7 +86,7 @@ export function DeleteDialog({
             disabled={isDeleting}
           >
             {isDeleting && <Loader2 className='size-4 mr-2 animate-spin' />}
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MoreVertical, Trash2, Play, Camera, Calendar } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import type { MediaItem } from '@/lib/types/media'
 import { getThumbnailUrl } from '@/lib/media-api'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,7 @@ function formatDate(dateString?: string): string | null {
 }
 
 export function MediaCard({ item, onDelete }: MediaCardProps) {
+  const { t } = useTranslation('common')
   const [isLoading, setIsLoading] = useState(true)
   const [isError, setIsError] = useState(false)
 
@@ -62,7 +64,7 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
 
         {isError && (
           <div className='absolute inset-0 flex items-center justify-center text-muted-foreground text-sm'>
-            Failed to load
+            {t('failedToLoad')}
           </div>
         )}
 
@@ -144,7 +146,7 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
               }}
             >
               <Trash2 className='size-4 mr-2' />
-              Delete
+              {t('delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

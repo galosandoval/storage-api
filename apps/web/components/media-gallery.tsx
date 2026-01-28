@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useQueryState } from 'nuqs'
 import { RefreshCw } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import { useMedia } from '@/hooks/use-media'
 import type { MediaItem } from '@/lib/types/media'
 import { typeFilterParser, visibilityFilterParser } from '@/lib/search-params'
@@ -14,6 +15,7 @@ import { VisibilityFilter } from '@/components/visibility-filter'
 import { DeleteDialog } from '@/components/delete-dialog'
 
 export function MediaGallery() {
+  const { t } = useTranslation('common')
   const [typeFilter, setTypeFilter] = useQueryState('type', typeFilterParser)
   const [visibilityFilter, setVisibilityFilter] = useQueryState('visibility', visibilityFilterParser)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
@@ -38,10 +40,9 @@ export function MediaGallery() {
     (item: MediaItem) => {
       // Only prepend if it matches the current filters
       const matchesType = typeFilter === 'all' || typeFilter === item.type
+      // For 'all' or 'mine', always show newly uploaded items (they're the current user's)
       const matchesVisibility =
-        visibilityFilter === 'all' ||
-        visibilityFilter === 'mine' ||
-        (visibilityFilter === 'public' && !item.isPrivate)
+        visibilityFilter === 'all' || visibilityFilter === 'mine'
       if (matchesType && matchesVisibility) {
         prependItem(item)
       }
@@ -66,7 +67,7 @@ export function MediaGallery() {
           variant='outline'
           size='icon'
           onClick={refresh}
-          title='Refresh'
+          title={t('refresh')}
         >
           <RefreshCw className='size-4' />
         </Button>

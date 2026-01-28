@@ -55,4 +55,4 @@ export interface ErrorResponse {
 
 export type MediaTypeFilter = 'all' | 'photo' | 'video'
 
-export type VisibilityFilter = 'all' | 'mine' | 'public'
+export type VisibilityFilter = 'all' | 'mine'

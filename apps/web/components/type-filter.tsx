@@ -1,6 +1,7 @@
 'use client'
 
 import { Image, Video, LayoutGrid } from 'lucide-react'
+import { useTranslation } from '@/hooks/use-translations'
 import type { MediaTypeFilter } from '@/lib/types/media'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
@@ -10,6 +11,8 @@ interface TypeFilterProps {
 }
 
 export function TypeFilter({ value, onChange }: TypeFilterProps) {
+  const { t } = useTranslation('filters')
+
   return (
     <ToggleGroup
       type='single'
@@ -21,17 +24,17 @@ export function TypeFilter({ value, onChange }: TypeFilterProps) {
       }}
       className='justify-start'
     >
-      <ToggleGroupItem value='all' aria-label='Show all'>
+      <ToggleGroupItem value='all' aria-label={t('showAll')}>
         <LayoutGrid className='size-4 mr-2' />
-        All
+        {t('all')}
       </ToggleGroupItem>
-      <ToggleGroupItem value='photo' aria-label='Show photos'>
+      <ToggleGroupItem value='photo' aria-label={t('showPhotos')}>
         <Image className='size-4 mr-2' />
-        Photos
+        {t('photos')}
       </ToggleGroupItem>
-      <ToggleGroupItem value='video' aria-label='Show videos'>
+      <ToggleGroupItem value='video' aria-label={t('showVideos')}>
         <Video className='size-4 mr-2' />
-        Videos
+        {t('videos')}
       </ToggleGroupItem>
     </ToggleGroup>
   )
