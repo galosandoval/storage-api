@@ -71,6 +71,7 @@ export function MediaCard({ item, onDelete }: MediaCardProps) {
             src={thumbnailUrl}
             alt=''
             fill
+            unoptimized
             className={cn(
               'object-cover transition-transform duration-200',
               'group-hover:scale-105'
