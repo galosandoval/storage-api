@@ -2,7 +2,8 @@ import type {
   MediaItem,
   MediaListResponse,
   ErrorResponse,
-  MediaTypeFilter
+  MediaTypeFilter,
+  VisibilityFilter
 } from './types/media'
 
 // Use local API routes to avoid CORS issues
@@ -11,7 +12,8 @@ import type {
 export async function listMedia(
   page = 1,
   pageSize = 20,
-  typeFilter?: MediaTypeFilter
+  typeFilter?: MediaTypeFilter,
+  visibilityFilter?: VisibilityFilter
 ): Promise<MediaListResponse> {
   const params = new URLSearchParams({
     page: String(page),
@@ -20,6 +22,10 @@ export async function listMedia(
 
   if (typeFilter && typeFilter !== 'all') {
     params.set('type', typeFilter)
+  }
+
+  if (visibilityFilter) {
+    params.set('visibility', visibilityFilter)
   }
 
   const response = await fetch(`/api/media?${params}`)
@@ -54,6 +60,7 @@ export function getThumbnailUrl(id: string): string {
 
 export interface UploadOptions {
   file: File
+  isPrivate?: boolean
   onProgress?: (progress: number) => void
 }
 
@@ -78,12 +85,16 @@ export type UploadOutcome = UploadResult | UploadConflict | UploadError
 
 export function uploadMedia({
   file,
+  isPrivate = false,
   onProgress
 }: UploadOptions): Promise<UploadOutcome> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
     const formData = new FormData()
     formData.append('file', file)
+    if (isPrivate) {
+      formData.append('is_private', 'true')
+    }
 
     xhr.upload.addEventListener('progress', (event) => {
       if (event.lengthComputable && onProgress) {

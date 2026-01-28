@@ -9,6 +9,8 @@ import (
 type MediaItem struct {
 	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	HouseholdID uuid.UUID  `gorm:"type:uuid;not null;index" json:"householdId"`
+	UploaderID  *uuid.UUID `gorm:"type:uuid;index" json:"uploaderId,omitempty"`
+	IsPrivate   bool       `gorm:"default:false" json:"isPrivate"`
 	Path        string     `gorm:"size:512;not null" json:"path"`
 	Type        string     `gorm:"size:10;not null" json:"type"` // "photo" or "video"
 	MimeType    string     `gorm:"size:100" json:"mimeType,omitempty"`

@@ -7,13 +7,15 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get('page') ?? '1'
   const pageSize = searchParams.get('pageSize') ?? '20'
   const type = searchParams.get('type')
+  const visibility = searchParams.get('visibility')
 
   const params = new URLSearchParams({ page, pageSize })
   if (type) params.set('type', type)
+  if (visibility) params.set('visibility', visibility)
 
   try {
     const response = await fetch(`${getApiBaseUrl()}/media?${params}`, {
-      headers: getApiHeaders()
+      headers: await getApiHeaders()
     })
 
     const data = await response.json()
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(`${getApiBaseUrl()}/media/upload`, {
       method: 'POST',
-      headers: getApiHeaders(),
+      headers: await getApiHeaders(),
       body: formData
     })
 

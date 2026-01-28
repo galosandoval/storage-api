@@ -122,6 +122,7 @@ function MediaDisplay({
           alt={item.originalFilename || 'Photo'}
           width={item.width || 1920}
           height={item.height || 1080}
+          unoptimized
           className='max-w-full max-h-[80vh] w-auto h-auto object-contain'
           onLoad={onLoad}
           priority

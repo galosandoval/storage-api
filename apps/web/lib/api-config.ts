@@ -1,6 +1,8 @@
 // Server-side only configuration for the backend API
 // These are not exposed to the browser
 
+import { auth } from '@clerk/nextjs/server'
+
 /**
  * Get the base URL for the backend API.
  *
@@ -15,7 +17,6 @@ export function getApiBaseUrl(): string {
   if (process.env.PI_API_URL) {
     return process.env.PI_API_URL.replace(/\/$/, '') // Remove trailing slash
   }
-  console.log('process.env', process.env)
   // Option 2: Host + Port (for backward compatibility with NEXT_PUBLIC_PI_HOST)
   const host =
     process.env.PI_HOST || process.env.NEXT_PUBLIC_PI_HOST || 'localhost'
@@ -34,9 +35,19 @@ export function getHouseholdId(): string {
 
 /**
  * Get common headers for backend API requests.
+ * Includes Clerk JWT token for authentication.
  */
-export function getApiHeaders(): HeadersInit {
-  return {
+export async function getApiHeaders(): Promise<HeadersInit> {
+  const { getToken } = await auth()
+  const token = await getToken()
+
+  const headers: HeadersInit = {
     'X-Household-ID': getHouseholdId()
   }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  return headers
 }

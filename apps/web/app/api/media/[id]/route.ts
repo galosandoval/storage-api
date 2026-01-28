@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   try {
     const response = await fetch(`${getApiBaseUrl()}/media/${id}`, {
-      headers: getApiHeaders()
+      headers: await getApiHeaders()
     })
 
     const data = await response.json()
@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const response = await fetch(`${getApiBaseUrl()}/media/${id}`, {
       method: 'DELETE',
-      headers: getApiHeaders()
+      headers: await getApiHeaders()
     })
 
     const data = await response.json()

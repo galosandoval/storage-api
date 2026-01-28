@@ -9,8 +9,11 @@ import (
 	"strconv"
 
 	"storage-api/internal/models"
+	"storage-api/internal/repository"
 	"storage-api/internal/service"
 
+	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -21,11 +24,12 @@ const (
 )
 
 type MediaHandler struct {
-	svc *service.MediaService
+	svc     *service.MediaService
+	userSvc *service.UserService
 }
 
-func NewMediaHandler(svc *service.MediaService) *MediaHandler {
-	return &MediaHandler{svc: svc}
+func NewMediaHandler(svc *service.MediaService, userSvc *service.UserService) *MediaHandler {
+	return &MediaHandler{svc: svc, userSvc: userSvc}
 }
 
 // parseMediaID extracts and validates a UUID from the URL path parameter.
@@ -98,6 +102,9 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get current user for uploader tracking
+	currentUser := h.getCurrentUser(r)
+
 	// Limit upload size
 	r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
 
@@ -131,6 +138,9 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse is_private flag (defaults to false/public)
+	isPrivate := r.FormValue("is_private") == "true"
+
 	// Save file to storage
 	saved, err := SaveUploadedFile(file, mediaType, header.Filename, mimeType)
 	if err != nil {
@@ -154,6 +164,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	// Create media item
 	item := &models.MediaItem{
 		HouseholdID:      householdID,
+		IsPrivate:        isPrivate,
 		Path:             saved.RelativePath,
 		Type:             mediaType,
 		MimeType:         mimeType,
@@ -162,6 +173,11 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		PreviewPath:      saved.PreviewRelativePath,
 		ThumbnailPath:    saved.ThumbnailRelPath,
 		OriginalFilename: header.Filename,
+	}
+
+	// Set uploader if we have a current user
+	if currentUser != nil {
+		item.UploaderID = &currentUser.ID
 	}
 
 	// Populate metadata if extracted
@@ -215,7 +231,29 @@ func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 		pageSize = 20
 	}
 
-	items, totalCount, err := h.svc.List(r.Context(), householdID, page, pageSize)
+	// Parse visibility and type filters
+	visibility := r.URL.Query().Get("visibility")
+	if visibility == "" {
+		visibility = "all"
+	}
+	mediaType := r.URL.Query().Get("type")
+
+	// Get current user ID from database (for visibility filtering)
+	var userID *uuid.UUID
+	if u := h.getCurrentUser(r); u != nil {
+		userID = &u.ID
+	}
+
+	filter := repository.MediaListFilter{
+		HouseholdID: householdID,
+		UserID:      userID,
+		Visibility:  visibility,
+		MediaType:   mediaType,
+		Page:        page,
+		PageSize:    pageSize,
+	}
+
+	items, totalCount, err := h.svc.List(r.Context(), filter)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to list media: %v", err),
@@ -233,6 +271,41 @@ func (h *MediaHandler) List(w http.ResponseWriter, r *http.Request) {
 		Page:       page,
 		PageSize:   pageSize,
 	})
+}
+
+// getCurrentUser looks up the current user from Clerk claims
+func (h *MediaHandler) getCurrentUser(r *http.Request) *models.User {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		return nil
+	}
+
+	// Fetch user from Clerk to get email
+	clerkUser, err := user.Get(r.Context(), claims.Subject)
+	if err != nil {
+		return nil
+	}
+
+	// Get primary email
+	var email string
+	for _, e := range clerkUser.EmailAddresses {
+		if e.ID == *clerkUser.PrimaryEmailAddressID {
+			email = e.EmailAddress
+			break
+		}
+	}
+
+	if email == "" {
+		return nil
+	}
+
+	// Look up user in database
+	u, err := h.userSvc.GetByEmail(r.Context(), email)
+	if err != nil {
+		return nil
+	}
+
+	return u
 }
 
 // Get handles GET /media/{id}

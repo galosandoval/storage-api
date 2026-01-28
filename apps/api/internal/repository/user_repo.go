@@ -11,6 +11,7 @@ import (
 // UserRepository defines the interface for user data access
 type UserRepository interface {
 	GetByExternalSub(ctx context.Context, sub string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
 type userRepo struct {
@@ -25,6 +26,18 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 func (r *userRepo) GetByExternalSub(ctx context.Context, sub string) (*models.User, error) {
 	var user models.User
 	err := r.db.WithContext(ctx).Where("external_sub = ?", sub).First(&user).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, models.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, models.ErrNotFound
 	}

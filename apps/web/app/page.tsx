@@ -2,8 +2,12 @@ import { SignOutButton, UserButton } from '@clerk/nextjs'
 import { LogOut } from 'lucide-react'
 import { MediaGallery } from '@/components/media-gallery'
 import { Button } from '@/components/ui/button'
+import { validateUser } from '@/lib/validate-user'
 
-export default function Home() {
+export default async function Home() {
+  // Validate user is in household - redirects if not authorized
+  await validateUser()
+
   return (
     <div className='min-h-svh bg-background'>
       <header className='flex items-center justify-between p-4 sm:px-8 border-b'>

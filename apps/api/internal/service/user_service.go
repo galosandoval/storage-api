@@ -21,3 +21,8 @@ func NewUserService(repo repository.UserRepository) *UserService {
 func (s *UserService) GetByExternalSub(ctx context.Context, sub string) (*models.User, error) {
 	return s.repo.GetByExternalSub(ctx, sub)
 }
+
+// GetByEmail retrieves a user by email address
+func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.repo.GetByEmail(ctx, email)
+}

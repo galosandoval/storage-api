@@ -6,6 +6,9 @@ import (
 
 	"storage-api/internal/models"
 	"storage-api/internal/service"
+
+	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 )
 
 type UserHandler struct {
@@ -17,23 +20,55 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 }
 
 // GetMe handles the /me endpoint
-// Dev auth: provide X-Dev-User header as external_sub (temporary)
+// Requires Clerk JWT authentication (handled by middleware)
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	sub := r.Header.Get("X-Dev-User")
-	if sub == "" {
+	// Get Clerk claims from context (set by middleware)
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
-			"error": "missing X-Dev-User header (dev mode). Example: X-Dev-User: dev-you",
+			"error": "no authentication claims found",
 		})
 		return
 	}
 
-	u, err := h.svc.GetByExternalSub(r.Context(), sub)
+	// Fetch user details from Clerk to get email
+	clerkUser, err := user.Get(r.Context(), claims.Subject)
 	if err != nil {
-		status := http.StatusUnauthorized
-		if !errors.Is(err, models.ErrNotFound) {
-			status = http.StatusInternalServerError
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": "failed to fetch user from Clerk",
+		})
+		return
+	}
+
+	// Get primary email from Clerk user
+	var email string
+	for _, e := range clerkUser.EmailAddresses {
+		if e.ID == *clerkUser.PrimaryEmailAddressID {
+			email = e.EmailAddress
+			break
 		}
-		writeJSON(w, status, map[string]any{"error": err.Error()})
+	}
+
+	if email == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"error": "no email address found for user",
+		})
+		return
+	}
+
+	// Look up user in our database by email
+	u, err := h.svc.GetByEmail(r.Context(), email)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			// User not in household - return 401
+			writeJSON(w, http.StatusUnauthorized, map[string]any{
+				"error": "user not authorized for this household",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": err.Error(),
+		})
 		return
 	}
 
