@@ -19,20 +19,7 @@ interface UseMediaOptions {
   visibilityFilter?: VisibilityFilter
 }
 
-interface UseMediaReturn {
-  items: MediaItem[]
-  isLoading: boolean
-  isLoadingMore: boolean
-  error: string | null
-  hasMore: boolean
-  loadMore: () => void
-  refresh: () => void
-  prependItem: (item: MediaItem) => void
-  removeItem: (id: string) => void
-  sentinelRef: (node: HTMLElement | null) => void
-}
-
-export function useMedia(options: UseMediaOptions = {}): UseMediaReturn {
+export function useMedia(options: UseMediaOptions = {}) {
   const { pageSize = 20, typeFilter = 'all', visibilityFilter = 'all' } = options
   const queryClient = useQueryClient()
 
