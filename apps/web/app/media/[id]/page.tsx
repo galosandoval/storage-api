@@ -19,7 +19,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { useMediaItem } from '@/hooks/use-media'
-import { getMediaUrl } from '@/lib/media-api'
+import { getMediaUrl, getOriginalMediaUrl } from '@/lib/media-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { MediaItem } from '@/lib/types/media'
@@ -85,7 +85,7 @@ function MediaHeader({ id, filename }: { id: string; filename?: string }) {
           </Button>
         </Link>
         <div className='flex-1' />
-        <a href={getMediaUrl(id)} download={filename || `media-${id}`}>
+        <a href={getOriginalMediaUrl(id)} download={filename || `media-${id}`}>
           <Button variant='outline' size='sm'>
             <Download className='size-4 mr-2' />
             Download

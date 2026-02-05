@@ -11,6 +11,7 @@ git pull origin main
 
 echo "🔨 Building application..."
 go build -o storage-api ./cmd/server
+go build -o backfill-webp ./cmd/backfill-webp
 
 echo "🗄️  Running migrations..."
 ./migrate.sh

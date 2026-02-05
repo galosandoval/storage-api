@@ -23,9 +23,10 @@ type MediaItem struct {
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
-	// Preview, thumbnail, and original file paths
+	// Preview, thumbnail, web-optimized, and original file paths
 	PreviewPath      string `gorm:"size:512" json:"previewPath,omitempty"`
 	ThumbnailPath    string `gorm:"size:512" json:"thumbnailPath,omitempty"`
+	WebPath          string `gorm:"size:512" json:"webPath,omitempty"`
 	OriginalFilename string `gorm:"size:255" json:"originalFilename,omitempty"`
 
 	// Camera metadata (from EXIF)

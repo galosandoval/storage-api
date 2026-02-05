@@ -153,7 +153,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	// Check if file already exists (by path)
 	existing, err := h.svc.GetByPath(r.Context(), householdID, saved.RelativePath)
 	if err == nil {
-		CleanupFiles(saved.FullPath, saved.PreviewFullPath)
+		CleanupFiles(saved.FullPath, saved.PreviewFullPath, saved.WebFullPath)
 		writeJSON(w, http.StatusConflict, map[string]any{
 			"error":    "file already exists",
 			"existing": existing,
@@ -172,6 +172,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		SHA256:           saved.SHA256,
 		PreviewPath:      saved.PreviewRelativePath,
 		ThumbnailPath:    saved.ThumbnailRelPath,
+		WebPath:          saved.WebRelPath,
 		OriginalFilename: header.Filename,
 	}
 
@@ -186,7 +187,7 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Create(r.Context(), item); err != nil {
-		CleanupFiles(saved.FullPath, saved.PreviewFullPath)
+		CleanupFiles(saved.FullPath, saved.PreviewFullPath, saved.WebFullPath)
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("failed to save to database: %v", err),
 		})
@@ -324,6 +325,7 @@ func (h *MediaHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download handles GET /media/{id}/download
+// Serves web-optimized WebP for photos (fast), falls back to preview/original.
 func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 	id, ok := parseMediaID(w, r)
 	if !ok {
@@ -335,16 +337,8 @@ func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use preview if available (for HEIC files), otherwise use original
-	var fullPath string
-	var contentType string
-	if item.PreviewPath != "" {
-		fullPath = filepath.Join(getMediaBasePath(), item.PreviewPath)
-		contentType = "image/jpeg"
-	} else {
-		fullPath = filepath.Join(getMediaBasePath(), item.Path)
-		contentType = item.MimeType
-	}
+	// Priority: WebP (fast) > Preview (HEIC converted) > Original
+	fullPath, contentType := resolveDownloadPath(item)
 
 	if !fileExists(fullPath) {
 		writeJSON(w, http.StatusNotFound, map[string]any{
@@ -357,6 +351,26 @@ func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentType)
 	}
 	http.ServeFile(w, r, fullPath)
+}
+
+func resolveDownloadPath(item *models.MediaItem) (fullPath, contentType string) {
+	basePath := getMediaBasePath()
+
+	// Prefer web-optimized WebP for photos
+	if item.WebPath != "" {
+		webPath := filepath.Join(basePath, item.WebPath)
+		if fileExists(webPath) {
+			return webPath, "image/webp"
+		}
+	}
+
+	// Fall back to preview (for HEIC files)
+	if item.PreviewPath != "" {
+		return filepath.Join(basePath, item.PreviewPath), "image/jpeg"
+	}
+
+	// Fall back to original
+	return filepath.Join(basePath, item.Path), item.MimeType
 }
 
 // Original handles GET /media/{id}/original
@@ -450,12 +464,16 @@ func (h *MediaHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteMediaFiles(item *models.MediaItem) {
-	os.Remove(filepath.Join(getMediaBasePath(), item.Path))
+	basePath := getMediaBasePath()
+	os.Remove(filepath.Join(basePath, item.Path))
 	if item.PreviewPath != "" {
-		os.Remove(filepath.Join(getMediaBasePath(), item.PreviewPath))
+		os.Remove(filepath.Join(basePath, item.PreviewPath))
 	}
 	if item.ThumbnailPath != "" {
-		os.Remove(filepath.Join(getMediaBasePath(), item.ThumbnailPath))
+		os.Remove(filepath.Join(basePath, item.ThumbnailPath))
+	}
+	if item.WebPath != "" {
+		os.Remove(filepath.Join(basePath, item.WebPath))
 	}
 }
 
