@@ -22,16 +22,24 @@ import (
 // ThumbnailSize is the maximum dimension for generated thumbnails
 const ThumbnailSize = 300
 
+// WebOptimizedSize is the maximum dimension for web-optimized images
+const WebOptimizedSize = 2400
+
+// WebOptimizedQuality is the quality setting for web-optimized WebP images
+const WebOptimizedQuality = 85
+
 // SavedFile contains metadata about a successfully saved file.
 type SavedFile struct {
 	RelativePath        string
 	FullPath            string
 	Size                int64
 	SHA256              string
-	PreviewRelativePath string // Path to JPEG preview (for HEIC files)
-	PreviewFullPath     string // Full path to preview
-	ThumbnailRelPath    string // Path to thumbnail (relative)
-	ThumbnailFullPath   string // Full path to thumbnail
+	PreviewRelativePath string         // Path to JPEG preview (for HEIC files)
+	PreviewFullPath     string         // Full path to preview
+	ThumbnailRelPath    string         // Path to thumbnail (relative)
+	ThumbnailFullPath   string         // Full path to thumbnail
+	WebRelPath          string         // Path to web-optimized WebP (relative)
+	WebFullPath         string         // Full path to web-optimized WebP
 	Metadata            *ImageMetadata
 }
 
@@ -119,6 +127,14 @@ func processHEICFile(result *SavedFile, fullPath, relativePath string) {
 	} else {
 		fmt.Printf("Warning: failed to generate thumbnail for HEIC: %v\n", err)
 	}
+
+	// Generate WebP from the JPEG preview
+	if webFull, webRel, err := GenerateWebOptimizedImage(previewPath, relativePath); err == nil {
+		result.WebFullPath = webFull
+		result.WebRelPath = webRel
+	} else {
+		fmt.Printf("Warning: failed to generate web-optimized image for HEIC: %v\n", err)
+	}
 }
 
 func processImageFile(result *SavedFile, fullPath, relativePath string) {
@@ -131,6 +147,13 @@ func processImageFile(result *SavedFile, fullPath, relativePath string) {
 		result.ThumbnailRelPath = thumbRel
 	} else {
 		fmt.Printf("Warning: failed to generate thumbnail: %v\n", err)
+	}
+
+	if webFull, webRel, err := GenerateWebOptimizedImage(fullPath, relativePath); err == nil {
+		result.WebFullPath = webFull
+		result.WebRelPath = webRel
+	} else {
+		fmt.Printf("Warning: failed to generate web-optimized image: %v\n", err)
 	}
 }
 
@@ -283,6 +306,65 @@ func CleanupThumbnail(relativePath string) {
 	}
 	fullPath := filepath.Join(getMediaBasePath(), relativePath)
 	os.Remove(fullPath)
+}
+
+func getWebPath(relativePath string) (fullPath, relPath string) {
+	ext := filepath.Ext(relativePath)
+	basePath := strings.TrimSuffix(relativePath, ext) + ".webp"
+	relPath = filepath.Join(".web", basePath)
+	fullPath = filepath.Join(getMediaBasePath(), relPath)
+	return fullPath, relPath
+}
+
+// GenerateWebOptimizedImage creates a 2400px max WebP version for fast web viewing.
+// Uses cwebp CLI tool for optimal WebP compression.
+func GenerateWebOptimizedImage(srcPath, originalRelPath string) (fullPath, relPath string, err error) {
+	fullPath, relPath = getWebPath(originalRelPath)
+
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return "", "", fmt.Errorf("failed to create web directory: %w", err)
+	}
+
+	// First resize the image to max 2400px dimension
+	src, err := imaging.Open(srcPath, imaging.AutoOrientation(true))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to open image: %w", err)
+	}
+
+	// Only resize if image is larger than WebOptimizedSize
+	bounds := src.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	if width > WebOptimizedSize || height > WebOptimizedSize {
+		src = imaging.Fit(src, WebOptimizedSize, WebOptimizedSize, imaging.Lanczos)
+	}
+
+	// Save as temporary PNG for cwebp input
+	tempPNG := fullPath + ".temp.png"
+	defer os.Remove(tempPNG)
+
+	if err := imaging.Save(src, tempPNG); err != nil {
+		return "", "", fmt.Errorf("failed to save temp image: %w", err)
+	}
+
+	// Convert to WebP using cwebp
+	if err := convertToWebP(tempPNG, fullPath); err != nil {
+		return "", "", err
+	}
+
+	return fullPath, relPath, nil
+}
+
+func convertToWebP(srcPath, destPath string) error {
+	cmd := exec.Command("cwebp",
+		"-q", fmt.Sprintf("%d", WebOptimizedQuality),
+		srcPath,
+		"-o", destPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("cwebp failed: %v, output: %s", err, string(output))
+	}
+	return nil
 }
 
 // Ensure imaging library types are recognized

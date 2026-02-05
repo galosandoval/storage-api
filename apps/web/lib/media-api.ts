@@ -54,6 +54,15 @@ export function getMediaUrl(id: string): string {
   return `/api/media/${id}/download`
 }
 
+/**
+ *
+ * @param id - The ID of the media item
+ * @returns The URL of the original media file
+ */
+export function getOriginalMediaUrl(id: string): string {
+  return `/api/media/${id}/original`
+}
+
 export function getThumbnailUrl(id: string): string {
   return `/api/media/${id}/thumbnail`
 }
